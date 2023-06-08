@@ -2,6 +2,6 @@ cabal-version:      2.4
 name:               stringdiagrams
 version:            0.1.0.0
 executable stringdiagrams
-    main-is:          BasicDiagram.hs
+    main-is:          PointDiagram.hs
     build-depends:    base, diagrams-lib, diagrams-svg
     default-language: Haskell2010

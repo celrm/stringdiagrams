@@ -1,4 +1,4 @@
 #!/bin/bash
 
 cabal build
-cabal exec stringdiagrams -- -o basicDiagram.svg -w 400 -l -s BasicDiagram.hs
+cabal exec stringdiagrams -- -o diagram.svg -w 400 -l -s PointDiagram.hs

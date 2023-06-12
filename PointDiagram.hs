@@ -7,7 +7,6 @@ import Diagrams.Backend.SVG.CmdLine
 import Data.List
 
 data StringDiagram = Object | Morphism | Compose StringDiagram StringDiagram | Tensor StringDiagram StringDiagram
-type DataTransfer = (Integer,Integer)
 
 dhw :: StringDiagram -> [Integer]
 dhw Object = [1,1,1]

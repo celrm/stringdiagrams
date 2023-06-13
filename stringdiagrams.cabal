@@ -1,7 +1,41 @@
-cabal-version:      2.4
+cabal-version:      3.0
 name:               stringdiagrams
+-- PVP summary:     +-+------- breaking API changes
+--                  | | +----- non-breaking API additions
+--                  | | | +--- code changes with no API change
 version:            0.1.0.0
-executable stringdiagrams
-    main-is:          BrickDiagram.hs
-    build-depends:    base, diagrams-lib, diagrams-svg
+homepage:           https://github.com/celrm/stringdiagrams
+license:            NONE
+author:             Celia Rubio
+maintainer:         celia_rubio@hotmail.es
+build-type:         Simple
+extra-doc-files:    CHANGELOG.md
+-- copyright:
+-- synopsis:
+-- description:
+
+common shared-properties
+    ghc-options:      -Wall
     default-language: Haskell2010
+    build-depends:    
+        base ^>=4.16.4.0, 
+        diagrams-lib, 
+        diagrams-svg
+
+library
+    import:           shared-properties
+    hs-source-dirs:   src
+    exposed-modules:  BrickDiagrams
+
+executable stringdiagrams
+    import:           shared-properties
+    build-depends:    stringdiagrams
+    hs-source-dirs:   app
+    main-is:          Main.hs
+
+test-suite stringdiagrams-test
+    import:           shared-properties
+    build-depends:    stringdiagrams
+    hs-source-dirs:   test
+    main-is:          Main.hs
+    type:             exitcode-stdio-1.0

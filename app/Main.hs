@@ -9,4 +9,4 @@ example = Compose (Tensor (Morphism (1, 2)) (Morphism (1, 1))) (Tensor (Morphism
 
 main :: IO ()
 main = mainWith $ (path # strokePath :: Diagram B) # frame 1
-    where (path, arity) = drawPath example
+    where (path, _) = drawPath example

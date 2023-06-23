@@ -52,10 +52,17 @@ drawCD :: BrickDiagram -> CustomDiagram
 
 -- A square, pinched in both upper vertices, with added text
 drawCD (Morphism (al,ar) s) = basicCD 
-    # set ls [Loc (centerPoint (basicCD^.p)) (text s # fontSizeG 0.25)]
+    # over ls (<> [Loc ctr (text s # fontSizeG 0.25 # translateY (-0.0625))])
+    # over ls (<> [Loc ctr (square 0.25 # scaleY 1.5 # fc white)])
+    # over p (<> toPath allSegments)
     # pinchCD (-al) # set a (al,1) 
     # pinchCD ar # set a (al,ar)
-    where basicCD = CD { _p = unitSquare # alignBL, _a = (1,1), _ls = []}
+    where 
+        basicCD = CD { _p = unitSquare # alignBL, _a = (1,1), _ls = []}
+        ctr = centerPoint (basicCD^.p) -- (0.5,0.5)
+        leftPoints = [p2 (0, (0.5+i)/al) | i <- [0,1..al-1]]
+        rightPoints = [p2 (1, (0.5+i)/ar) | i <- [0,1..ar-1]]
+        allSegments = [FLinear ctr pt | pt <- leftPoints++rightPoints] 
 
 -- Composing 2 CustomDiagrams
 drawCD (Compose bd1 bd2) = CD
@@ -79,7 +86,6 @@ drawCD (Tensor bd1 bd2) = CD
     where
         [cd1,cd2] = map drawCD [bd1,bd2]
         [al1,ar1,al2,ar2] = [fst (cd1^.a),snd (cd1^.a),fst (cd2^.a),snd (cd2^.a)]
-        
         [w1,w2] = width . view p <$> [cd1,cd2]
         maxWidth = max w1 w2
         ncd1 = cd1 # deformCD (Deformation $ scaleX (w1/maxWidth) . shearY ((ar2-al2)/maxWidth))
@@ -87,5 +93,9 @@ drawCD (Tensor bd1 bd2) = CD
 
 -- Put together a CustomDiagram into a Diagram B
 drawBrickDiagram :: BrickDiagram -> Diagram B
-drawBrickDiagram bd = cd^.p # strokePath <> mconcat [moveOriginTo (-o) s | (Loc o s) <- cd^.ls]
-    where cd = drawCD bd
+drawBrickDiagram bd = mconcat [moveOriginTo (-o) s | (Loc o s) <- ncd^.ls] <> ncd^.p # strokePath
+    where 
+        cd = drawCD bd
+        [al,ar] = [fst (cd^.a), snd (cd^.a)]
+        maxArity = max al ar        
+        ncd = cd # pinchCD (-maxArity) # set a (maxArity,ar) # pinchCD maxArity

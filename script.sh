@@ -9,8 +9,9 @@ command_to_execute="cabal run stringdiagrams -- -o diagram.svg -w 400"
 # Function to monitor the file
 monitor_file() {
     while true; do
-        inotifywait -e modify "$file_to_monitor"  >/dev/null 2>&1 # Wait for the file to be modified
+        echo $command_to_execute
         $command_to_execute  # Execute the command
+        inotifywait -e modify "$file_to_monitor"  >/dev/null 2>&1 # Wait for the file to be modified
     done
 }
 

@@ -18,7 +18,8 @@ common shared-properties
     ghc-options:      -Wall
     default-language: Haskell2010
     build-depends:    
-        base ^>=4.16.4.0, 
+        base,
+        --^>=4.16.4.0, 
         diagrams-lib, 
         diagrams-svg
 

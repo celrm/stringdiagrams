@@ -2,14 +2,16 @@ module Main where
 
 import Diagrams.Prelude
 import Diagrams.Backend.SVG.CmdLine
-import BrickDiagrams (BrickDiagram(..),drawBrickDiagram) 
+import BrickDiagrams
 
 example :: BrickDiagram
-example = 
-    -- Morphism (1, 1) "2"
-    -- Tensor (Morphism (1, 1) "3") (Morphism (2, 1) "4")
-    Compose (Tensor (Morphism (1, 2) "1") (Morphism (1, 1) "2")) (Tensor (Morphism (1, 1) "3") (Morphism (2, 1) "4"))
+example =
+    Compose 
+        (Tensor (Tensor (Morphism (1, 2) "0") (Morphism (1, 1) "1")) (Morphism (1, 1) "2")) 
+        (Tensor (Morphism (1, 1) "3") (Morphism (3, 5) "4"))
 
 main :: IO ()
 main = mainWith $ d # frame 1
-    where d = drawBrickDiagram example
+    where d = brickToCustom example 
+            # deformCD (Deformation $ scaleY 0.5) 
+            # (customToDiagram "sd")

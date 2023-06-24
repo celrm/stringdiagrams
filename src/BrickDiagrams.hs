@@ -21,13 +21,17 @@ $(makeLenses ''Locatables)
 $(makeLenses ''Properties)
 $(makeLenses ''CustomDiagram)
 
--- from Diagrams.Deform
-approx :: Deformation v u n -> FixedSegment v n -> FixedSegment u n
+drawCubic :: (R1 v, Metric v, Fractional n) => Point v n -> Point v n -> FixedSegment v n
+drawCubic o f = FCubic o (c o f) (c f o) f
+    where c x y = x .+^ (0.5 *^ project unitX (y .-. x))
+
+-- from Diagrams.Deform (slightly changed)
+approx :: (R1 u, Metric u, Fractional n) => Deformation v u n -> FixedSegment v n -> FixedSegment u n
 approx t (FLinear p0 p1)      = FLinear (deform t p0) (deform t p1)
-approx t (FCubic p0 c1 c2 p1) = FCubic (deform t p0) (deform t c1) (deform t c2) (deform t p1)
+approx t (FCubic p0 c1 c2 p1) = drawCubic (deform t p0) (deform t p1)
 
 -- This is a custom "deformation" for paths such that only the endpoints (and control points) are moved
-deformPath :: (Metric v, Metric u, OrderedField n) => Deformation v u n -> Path v n -> Path u n
+deformPath :: (Metric v, Metric u, R1 u, OrderedField n) => Deformation v u n -> Path v n -> Path u n
 deformPath t = toPath . map (map (approx t . mkFixedSeg)) . pathLocSegments
 
 -- This is a custom "deformation" for Located objects such that only the origin is moved
@@ -36,15 +40,12 @@ deformLoc t (Loc o s) = Loc (deform t o) s
 
 -- Deforms a Custom Diagram (its paths and its located objects)
 deformCD :: Deformation V2 V2 Double -> CustomDiagram -> CustomDiagram
-deformCD t = 
-    over (ps . bd) (deformPath t)
-    . over (ps . sd) (deformPath t)
-    . over (ls . texts . traverse) (deformLoc t)
-    . over (ls . boxes . traverse) (deformLoc t)
+deformCD t = over (ps . bd) (deformPath t) . over (ps . sd) (deformPath t)
+    . over (ls . texts . traverse) (deformLoc t) . over (ls . boxes . traverse) (deformLoc t)
 
 -- A type of deformCD that moves a quadrilateral's upper vertex to |k| (k<0 => left, k>0 => right)
 pinchCD :: Double -> CustomDiagram -> CustomDiagram
-pinchCD k cd = deformCD (Deformation (\pt -> pt # scaleY ((m' * (pt^._x) + n') / (m * (pt^._x) + n)))) cd
+pinchCD k cd = cd # deformCD (Deformation $ \pt -> pt # scaleY ((m' * pt^._x + n') / (m * pt^._x + n)))
     where 
         (al,ar) = cd^.pp.arity
         w = cd^.pp.dw
@@ -54,7 +55,7 @@ pinchCD k cd = deformCD (Deformation (\pt -> pt # scaleY ((m' * (pt^._x) + n') /
 
 -- A type of deformCD that translates the origin to the furthest boundary in v's direction
 alignCD :: V2 Double -> CustomDiagram -> CustomDiagram
-alignCD v cd = deformCD (Deformation $ moveOriginTo newOrigin) cd
+alignCD v cd = cd # deformCD (Deformation $ moveOriginTo newOrigin)
     where Just newOrigin = maxRayTraceP origin v $ cd^.ps.bd
 
 joinTwoCD :: (Arity -> Arity -> Arity) -> (Double -> Double -> Double) -> CustomDiagram -> CustomDiagram -> CustomDiagram
@@ -73,11 +74,11 @@ joinTwoCD farity fwidth cd1 cd2 = CD
 -- The main constructor of CustomDiagrams
 brickToCustom :: BrickDiagram -> CustomDiagram
 
--- A square, pinched in both upper vertices according to arity
+-- A square, pinched in both upper vertices according to its arity
 brickToCustom (Morphism (al,ar) s) = CD
     { _ps = Paths 
         { _bd = unitSquare # alignBL
-        , _sd = toPath [FLinear ctr pt | pt <- pts] }
+        , _sd = toPath [drawCubic ctr pt | pt <- pts] }
     , _ls = Locs 
         { _texts = [Loc ctr (text s # fontSizeG 0.25)]
         , _boxes = [Loc ctr (square 0.3 # scaleY 1.5 # fc white)] }

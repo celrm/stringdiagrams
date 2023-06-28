@@ -21,12 +21,15 @@ common shared-properties
         base,
         --^>=4.16.4.0, 
         diagrams-lib, 
-        diagrams-svg
+        diagrams-svg,
+        safe, aeson, bytestring
 
 library
     import:           shared-properties
     hs-source-dirs:   src
-    exposed-modules:  BrickDiagrams
+    exposed-modules:  
+        StringDiagrams.Read,
+        BrickDiagrams
 
 executable stringdiagrams
     import:           shared-properties

@@ -4,7 +4,7 @@
 {-# LANGUAGE TemplateHaskell           #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 
-module BrickDiagrams (
+module StringDiagrams.Draw (
     OutputDiagram,
     inputToOutput,
     outputToDiagram,

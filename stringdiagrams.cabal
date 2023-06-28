@@ -29,7 +29,7 @@ library
     hs-source-dirs:   src
     exposed-modules:  
         StringDiagrams.Read,
-        BrickDiagrams
+        StringDiagrams.Draw
 
 executable stringdiagrams
     import:           shared-properties

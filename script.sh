@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the file to monitor
-file_to_monitor="./src/BrickDiagrams.hs"
+file_to_monitor="./src/StringDiagrams/Draw.hs"
 
 # Define the command to execute when the file is modified
 command_to_execute="cabal run stringdiagrams -- -o diagram.svg -w 400"

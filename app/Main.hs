@@ -2,7 +2,7 @@ module Main where
 
 import Diagrams.Prelude
 import Diagrams.Backend.SVG.CmdLine
-import BrickDiagrams
+import StringDiagrams.Draw
 import StringDiagrams.Read
 
 main :: IO ()

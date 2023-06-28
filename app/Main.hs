@@ -7,8 +7,8 @@ import BrickDiagrams
 example :: BrickDiagram
 example =
     Compose 
-        (Tensor (Tensor (Morphism (2, 2) "0") (Morphism (1, 2) "1")) (Morphism (2, 2) "2")) 
-        (Tensor (Morphism (1, 1) "3") (Tensor (Morphism (2, 5) "4") (Crossing 3 (Just f))))
+        (Tensor (Tensor (Morphism (7, 2) "0") (Morphism (1, 2) "1")) (Morphism (2, 2) "2")) 
+        (Tensor (Morphism (1, 1) "3") (Tensor (Morphism (2, 1) "4") (Crossing 3 (Just f))))
         where 
             f 0 = 1
             f 1 = 2
@@ -17,5 +17,6 @@ example =
 main :: IO ()
 main = mainWith $ d # frame 1
     where d = brickToCustom example 
-            # squarify # scaleCD 0.33
+            # scaleYCD 0.4 # scaleXCD 1.5
+            -- # squarify 
             # customToDiagram "sd"

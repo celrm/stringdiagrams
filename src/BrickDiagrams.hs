@@ -92,7 +92,7 @@ brickToCustom (Morphism (al,ar) s) = CD
         { _bd = unitSquare # alignBL
         , _sd = toPath (ptsl++ptsr) }
     , _ls = Locs 
-        { _texts = [Loc ctr (text s # fontSizeG 0.25 # translateY (-0.0625))]
+        { _texts = [Loc ctr (text s # fontSizeG 0.25 # translateY (-0.0625))] -- TODO fit inside boxes
         , _boxes = [Loc ctr (square 0.3 # scaleY 1.5 # fc white)] } -- TODO clip instead
     , _pp = Props 
         { _arity = (1,1), _dw = 1, _warnings = [] } } 
@@ -162,11 +162,15 @@ squarify cd = cd
         (al,ar) = cd^.pp.arity
         maxArity = max al ar
 
+isoscelify :: CustomDiagram -> CustomDiagram
+isoscelify cd = cd # deformCD (Deformation $ shearY sh)
+    where sh = (fst (cd^.pp.arity)-snd (cd^.pp.arity))/(2*(cd^.pp.dw))
+
 -- Put together a CustomDiagram into a Diagram B
 customToDiagram :: String -> CustomDiagram -> Diagram B
 customToDiagram tp cd = mconcat diagrams
     where
-        ncd = cd # rectangify
+        ncd = cd # isoscelify
         diagrams = [moveOriginTo (-o) s | (Loc o s) <- ncd^.ls.texts]
             ++ (if tp/="sd" then [ncd^.ps.bd # strokePath] else [])
             ++ (if tp/="bd" then [moveOriginTo (-o) s | (Loc o s) <- ncd^.ls.boxes]

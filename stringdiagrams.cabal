@@ -22,7 +22,8 @@ common shared-properties
         --^>=4.16.4.0, 
         diagrams-lib, 
         diagrams-svg,
-        safe, aeson, bytestring
+        safe, aeson, bytestring, 
+        containers
 
 library
     import:           shared-properties

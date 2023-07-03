@@ -5,6 +5,7 @@
 {-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 
 module StringDiagrams.Draw (
     OutputDiagram,
@@ -20,6 +21,7 @@ module StringDiagrams.Draw (
     isoscelify
 ) where
 
+import Data.Tree ( foldTree )
 import Safe ( atMay )
 import Data.Maybe ( fromMaybe )
 import Diagrams.Prelude
@@ -33,9 +35,9 @@ $(makeLenses ''OutputDiagram)
 --  Constructing OutputDiagram  ----------------------------
 ------------------------------------------------------------
 
--- The main constructor of OutputDiagram
-inputToOutput :: InputDiagram -> OutputDiagram
-inputToOutput (Morphism (al,ar) s) = OD
+-- Patterns for [] assume good type
+foldOutput :: (a~BlockType,b~OutputDiagram) => a -> [b] -> b
+foldOutput (Morphism (al,ar) s) _ = OD
     { _ps = Paths { _bd = unitSquare # alignBL, _sd = toPath (ptsl++ptsr) }
     , _ls = Locs
         { _texts = [Loc ctr (text s # fontSizeG 0.25 # translateY (-0.0625))] -- TODO fit inside boxes
@@ -48,27 +50,24 @@ inputToOutput (Morphism (al,ar) s) = OD
         ptsl = [drawCubic ctr (0 ^& ((0.5+i)/al)) | i <-[0..al-1]]
         ptsr = [drawCubic ctr (1 ^& ((0.5+i)/ar)) | i <-[0..ar-1]]
 
--- Only for SD (for BD it gets an empty box)
-inputToOutput (Crossing k mf) =
-    inputToOutput (Morphism (k,k) "")
+foldOutput (Crossing k mf) _ =
+    foldOutput (Morphism (k,k) "") []
     # set (ls . boxes) []
     # set (ps . sd) (toPath pts)
     where
         pts = [drawCubic (0 ^& (0.5+i)) (1 ^& (0.5+f i)) | i <-[0..k-1]]
         f i = fromIntegral $ fromMaybe 0 $ mf >>= \ys -> ys `atMay` n where n = floor i
 
--- Composing 2 OutputDiagrams
-inputToOutput (Compose bd1 bd2) = alignOD (-unitX) $ nod1 <> nod2
+foldOutput Compose [od1,od2] =
+    alignOD (-unitX) $ nod1 <> nod2
     where
-        [od1,od2] = map inputToOutput [bd1,bd2]
         middle = (od1 # arity # fst + od2 # arity # snd)/2
         nod1 = od1 # pinchOD middle # alignOD unitX
         nod2 = od2 # pinchOD (-middle)
 
--- Tensoring 2 OutputDiagrams
-inputToOutput (Tensor bd1 bd2) = alignOD (-unitY) $ nod1 <> nod2
+foldOutput Tensor [od1,od2] =
+    alignOD (-unitY) $ nod1 <> nod2
     where
-        [od1,od2] = map inputToOutput [bd1,bd2]
         [w1,w2] = width . view (ps.bd) <$> [od1,od2]
         mw = max w1 w2
         nod1 = od1 # deform (Deformation
@@ -78,11 +77,15 @@ inputToOutput (Tensor bd1 bd2) = alignOD (-unitY) $ nod1 <> nod2
             $ scaleX (w2/mw))
             # alignOD unitY
 
+-- The main fold of OutputDiagram
+inputToOutput :: InputDiagram -> OutputDiagram
+inputToOutput = foldTree foldOutput
+
 ------------------------------------------------------------
 --  Drawing OutputDiagram  ---------------------------------
 ------------------------------------------------------------
 
--- Put together a OutputDiagram into a Diagram B
+-- Put together an OutputDiagram into a Diagram B
 outputToDiagram :: String -> OutputDiagram -> Diagram B
 outputToDiagram tp od = mconcat diagrams
     where

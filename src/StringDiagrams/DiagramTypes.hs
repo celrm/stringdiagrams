@@ -7,7 +7,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module StringDiagrams.DiagramTypes (
-    InputDiagram(..),
+    InputDiagram,
+    BlockType(..),
     Arity,
     Paths(..),
     Locatables(..),
@@ -19,6 +20,7 @@ module StringDiagrams.DiagramTypes (
     alignOD
 ) where
 
+import Data.Tree ( Tree )
 import Diagrams.Prelude
 import Diagrams.Backend.SVG.CmdLine ( B )
 
@@ -29,12 +31,20 @@ import Diagrams.Backend.SVG.CmdLine ( B )
 -- | A binary tree-like structure where leaves are either boxes or string crossings
 --   and internal nodes have either composition or tensoring.
 
+-- data InputDiagram = 
+--     Crossing Double (Maybe [Int]) 
+--     | Morphism Arity String 
+--     | Compose InputDiagram InputDiagram 
+--     | Tensor InputDiagram InputDiagram
+
 type Arity = (Double, Double)
-data InputDiagram = 
-    Crossing Double (Maybe [Int]) 
-    | Morphism Arity String 
-    | Compose InputDiagram InputDiagram 
-    | Tensor InputDiagram InputDiagram
+data BlockType = 
+    Crossing Double (Maybe [Int])
+    | Morphism Arity String
+    | Compose
+    | Tensor
+
+type InputDiagram = Tree BlockType
 
 ------------------------------------------------------------
 --  OutputDiagram type  ------------------------------------

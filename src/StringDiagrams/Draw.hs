@@ -13,9 +13,6 @@ module StringDiagrams.Draw (
     outputToDiagram,
     drawBrickDiagram,
     drawStringDiagram,
-    scaleOD,
-    scaleXOD,
-    scaleYOD,
     rectangify,
     squarify,
     isoscelify
@@ -43,8 +40,8 @@ foldOutput (Morphism (al,ar) s) _ = OD
         { _texts = [Loc ctr (text s # fontSizeG 0.25 # translateY (-0.0625))] -- TODO fit inside boxes
         , _boxes = [Loc ctr (square 0.3 # scaleY 1.5 # fc white)] } -- TODO clip instead
     }
-    # pinchOD (-al)
-    # pinchOD ar
+    # pinch (-al)
+    # pinch ar
     where
         ctr = 0.5 ^& 0.5
         ptsl = [drawCubic ctr (0 ^& ((0.5+i)/al)) | i <-[0..al-1]]
@@ -59,23 +56,16 @@ foldOutput (Crossing k mf) _ =
         f i = fromIntegral $ fromMaybe 0 $ mf >>= \ys -> ys `atMay` n where n = floor i
 
 foldOutput Compose [od1,od2] =
-    alignOD (-unitX) $ nod1 <> nod2
-    where
-        middle = (od1 # arity # fst + od2 # arity # snd)/2
-        nod1 = od1 # pinchOD middle # alignOD unitX
-        nod2 = od2 # pinchOD (-middle)
+    od1 # pinch middle ||| od2 # pinch (-middle)
+    where middle = (od1 # arity # fst + od2 # arity # snd)/2
 
-foldOutput Tensor [od1,od2] =
-    alignOD (-unitY) $ nod1 <> nod2
+foldOutput Tensor [od1,od2] = alignB $
+    od1 # scaleX (w1/mw) # shearY ((od2 # arity # snd - od2 # arity # fst)/mw)
+    === 
+    od2 # scaleX (w2/mw)
     where
-        [w1,w2] = width . view (ps.bd) <$> [od1,od2]
+        [w1,w2] = width <$> [od1,od2]
         mw = max w1 w2
-        nod1 = od1 # deform (Deformation
-            $ scaleX (w1/mw)
-            . shearY ((od2 # arity # snd - od2 # arity # fst)/mw))
-        nod2 = od2 # deform (Deformation
-            $ scaleX (w2/mw))
-            # alignOD unitY
 
 -- The main fold of OutputDiagram
 inputToOutput :: InputDiagram -> OutputDiagram
@@ -87,53 +77,38 @@ inputToOutput = foldTree foldOutput
 
 -- Put together an OutputDiagram into a Diagram B
 outputToDiagram :: String -> OutputDiagram -> Diagram B
-outputToDiagram tp od = mconcat diagrams
-    where
-        nod = od # isoscelify
-        diagrams = [moveOriginTo (-o) s | (Loc o s) <- nod^.ls.texts]
-            ++ [moveOriginTo (- o) s    | tp /= "bd", (Loc o s) <- nod ^. ls . boxes]
-            ++ [nod^.ps.sd # strokePath | tp /= "bd"]
-            ++ [nod^.ps.bd # strokePath | tp /= "sd"]
+outputToDiagram tp od = mconcat 
+            $  [moveOriginTo (-o) s | (Loc o s) <- od^.ls.texts]
+            ++ [moveOriginTo (-o) s | tp /= "bd", (Loc o s) <- od^.ls.boxes]
+            ++ [od^.ps.sd # strokePath | tp /= "bd"]
+            ++ [od^.ps.bd # strokePath | tp /= "sd"]
 
 -- From InputDiagram to Diagram B directly (BD format)
 drawBrickDiagram :: InputDiagram -> Diagram B
-drawBrickDiagram = outputToDiagram "bd" . inputToOutput
+drawBrickDiagram = outputToDiagram "bd" . isoscelify . inputToOutput
 
 -- From InputDiagram to Diagram B directly (SD format)
 drawStringDiagram :: InputDiagram -> Diagram B
-drawStringDiagram = outputToDiagram "sd" . inputToOutput
+drawStringDiagram = outputToDiagram "sd" . isoscelify . inputToOutput
 
 ------------------------------------------------------------
---  Deforming OutputDiagram (external)  --------------------
+--  Deforming OutputDiagram (externally)  ------------------
 ------------------------------------------------------------
-
-scaleXOD :: Double -> OutputDiagram -> OutputDiagram
-scaleXOD k =
-    deform (Deformation $ scaleX k)
-
-scaleYOD :: Double -> OutputDiagram -> OutputDiagram
-scaleYOD k =
-    deform (Deformation $ scaleY k)
-
-scaleOD :: Double -> OutputDiagram -> OutputDiagram
-scaleOD k = scaleXOD k . scaleYOD k
 
 rectangify :: OutputDiagram -> OutputDiagram
 rectangify od = od
-    # pinchOD (-maxArity)
-    # pinchOD maxArity
+    # pinch (-maxArity)
+    # pinch maxArity
     where
         (al,ar) = od # arity
         maxArity = max al ar
 
 squarify :: OutputDiagram -> OutputDiagram
-squarify od = od
-    # rectangify
-    # scaleXOD (maxArity/(od^.ps.bd # width))
+squarify od = od # rectangify
+    # scaleX (maxArity/(od # width))
     where
         (al,ar) = od # arity
         maxArity = max al ar
 
 isoscelify :: OutputDiagram -> OutputDiagram
-isoscelify od = od # deform (Deformation $ shearY sh)
-    where sh = (od # arity # fst - od # arity # snd)/(2*(od^.ps.bd # width))
+isoscelify od = od # shearY ((od # arity # fst - od # arity # snd)/(2*(od # width)))

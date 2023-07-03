@@ -14,10 +14,8 @@ module StringDiagrams.DiagramTypes (
     Locatables(..),
     OutputDiagram(..),
     arity,
-    width',
     drawCubic,
-    pinchOD,
-    alignOD
+    pinch,
 ) where
 
 import Data.Tree ( Tree )
@@ -77,14 +75,10 @@ instance Semigroup OutputDiagram where
 
 -- Finds the OutputDiagram's arity
 arity :: OutputDiagram -> Arity
-arity od = (od # findHeight, od # alignOD unitX # findHeight)
+arity od = (od # findHeight, od # align unitX # findHeight)
     where
         maybeFindLimit dd = maxRayTraceP origin unitY $ dd^.ps.bd
         findHeight dd = maybe 0 (^._y) (dd # maybeFindLimit)
-
--- Finds the OutputDiagram's width
-width' :: OutputDiagram -> Double
-width' od = od^.ps.bd # width
 
 ------------------------------------------------------------
 --  Deforming OutputDiagram (internal)  --------------------
@@ -117,16 +111,42 @@ instance r ~ OutputDiagram => Deformable OutputDiagram r where
     deform t = over ps (deform t) . over ls (deform t)
 
 -- Deformation that moves a quadrilateral's upper vertex to |k| (k<0 => left, k>0 => right)
-pinchOD :: Double -> OutputDiagram -> OutputDiagram
-pinchOD k od = od # deform (Deformation $ \pt -> pt # scaleY ((m' * pt^._x + n') / (m * pt^._x + n)))
+pinch :: Double -> OutputDiagram -> OutputDiagram
+pinch k od = od # deform (Deformation $ \pt -> pt # scaleY ((m' * pt^._x + n') / (m * pt^._x + n)))
     where
         (al,ar) = od # arity
-        w = od # width'
+        w = od # width
         lineEquation (x1,y1) (x2,y2) = (slope,y1-slope*x1) where slope = (y2-y1)/(x2-x1)
         (m,n) = lineEquation (0,al) (w,ar)
         (m',n') = if k<0 then lineEquation (0,-k) (w,ar) else lineEquation (0,al) (w,k)
 
--- Deformation that translates the origin to the furthest boundary in v's direction
-alignOD :: V2 Double -> OutputDiagram -> OutputDiagram
-alignOD v od = od # deform (Deformation $ moveOriginTo newOrigin)
-    where Just newOrigin = maxRayTraceP origin v $ od^.ps.bd
+------------------------------------------------------------
+--  Other immediate instances  -----------------------------
+------------------------------------------------------------
+
+instance Transformable OutputDiagram where
+    transform = deform . asDeformation
+
+instance HasOrigin OutputDiagram where
+    moveOriginTo p = deform (Deformation $ moveOriginTo p)
+
+instance Alignable OutputDiagram where
+    defaultBoundary v od = defaultBoundary v (od^.ps.bd)
+
+instance Traced OutputDiagram where
+    getTrace od = getTrace (od^.ps.bd)
+
+instance Enveloped OutputDiagram where
+    getEnvelope od = getEnvelope (od^.ps.bd)
+
+instance Juxtaposable OutputDiagram where
+    juxtapose = juxtaposeByTrace
+
+-- from Diagrams.Core.Juxtapose.juxtaposeDefault (slightly changed)
+juxtaposeByTrace :: (Traced a, HasOrigin a, Num (N a)) => Vn a -> a -> a -> a
+juxtaposeByTrace v a1 a2 =
+  case (mv1, mv2) of
+    (Just v1, Just v2) -> moveOriginBy (v1 ^+^ v2) a2
+    _                  -> a2
+  where mv1 = negated <$> maxTraceV origin v a1
+        mv2 = maxTraceV origin (negated v) a2

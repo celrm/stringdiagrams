@@ -13,5 +13,5 @@ main = do
       Just exmp -> mainWith $ d # frame 1
           where d = exmp 
                   # inputToOutput
-                  # scaleYOD 0.4 # scaleXOD 1.5
+                  # scaleY 0.4 # scaleX 1.5
                   # outputToDiagram "sd"

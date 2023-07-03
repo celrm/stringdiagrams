@@ -7,7 +7,7 @@ module StringDiagrams.Read (
 import Data.Tree ( Tree(..), )
 import Data.Aeson
 import qualified Data.ByteString.Lazy as B
-import StringDiagrams.DiagramTypes ( InputDiagram, BlockType(..), Arity )
+import StringDiagrams.Types ( InputDiagram, BlockType(..), Arity )
 
 newtype TupleDiagram = TID (Arity, InputDiagram)
 

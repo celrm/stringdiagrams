@@ -1,9 +1,9 @@
 module Main where
 
-import Diagrams.Prelude
-import Diagrams.Backend.SVG.CmdLine
-import StringDiagrams.Draw
-import StringDiagrams.Read
+import Diagrams.Prelude ( frame, scaleX, scaleY, (#) )
+import Diagrams.Backend.SVG.CmdLine ( mainWith )
+import StringDiagrams.Draw ( inputToOutput, outputToStringDiagram, isoscelify )
+import StringDiagrams.Read ( readInputDiagram )
 
 main :: IO ()
 main = do
@@ -13,5 +13,5 @@ main = do
       Just exmp -> mainWith $ d # frame 1
           where d = exmp 
                   # inputToOutput
-                  # scaleY 0.4 # scaleX 1.5
-                  # outputToDiagram "sd"
+                  # scaleY 0.4 # scaleX 1.5 # isoscelify
+                  # outputToStringDiagram

@@ -30,6 +30,8 @@ library
     exposed-modules:  
         StringDiagrams.Read,
         StringDiagrams.Draw
+    other-modules:
+        StringDiagrams.DiagramTypes,
 
 executable stringdiagrams
     import:           shared-properties

@@ -1,27 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module StringDiagrams.Read (
-    Arity,
-    InputDiagram(..),
     readInputDiagram
 ) where
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy as B
+import StringDiagrams.DiagramTypes ( InputDiagram(..), Arity )
 
-------------------------------------------------------------
---  InputDiagram type  -------------------------------------
-------------------------------------------------------------
-
--- | A binary tree-like structure where leaves are either boxes or string crossings
---   and internal nodes have either composition or tensoring.
-
-type Arity = (Double, Double)
-data InputDiagram = 
-    Crossing Double (Maybe [Int]) 
-    | Morphism Arity String 
-    | Compose InputDiagram InputDiagram 
-    | Tensor InputDiagram InputDiagram
 data TupleDiagram = TID Arity InputDiagram
 
 isPerm :: Maybe [Int] -> Int -> Bool

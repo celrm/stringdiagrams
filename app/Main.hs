@@ -1,8 +1,9 @@
 module Main where
 
-import Diagrams.Prelude ( frame, scaleX, scaleY, (#) )
+import Diagrams.Prelude
 import Diagrams.Backend.SVG.CmdLine ( mainWith )
-import StringDiagrams.Draw ( inputToOutput, outputToStringDiagram, isoscelify )
+
+import StringDiagrams.Draw
 import StringDiagrams.Read ( readInputDiagram )
 
 main :: IO ()

@@ -13,6 +13,6 @@ main = do
       Nothing -> putStrLn "Failed to parse JSON file."
       Just exmp -> mainWith $ d # frame 1
           where d = exmp 
-                  # inputToOutput
-                  # scaleY 0.4 # scaleX 1.5 # isoscelify
+                  # inputToOutput 
+                  # isoscelify # scaleY 0.5
                   # outputToStringDiagram

@@ -21,15 +21,6 @@ import Data.Tree ( foldTree )
 import Diagrams.Prelude
 import Diagrams.Backend.SVG.CmdLine ( B )
 import StringDiagrams.Types
-    ( InputDiagram,
-      BlockType(..),
-      OutputDiagram,
-      arity,
-      pinch,
-      drawMorphism,
-      drawCrossing,
-      outputToStringDiagram,
-      outputToBrickDiagram )
 
 ------------------------------------------------------------
 --  Constructing OutputDiagram  ----------------------------
@@ -38,6 +29,8 @@ import StringDiagrams.Types
 -- Patterns for [b] assume good type
 foldOutput :: (a~BlockType,b~OutputDiagram) => a -> [b] -> b
 foldOutput (Morphism a s) _ = drawMorphism a s
+
+foldOutput (MorphismWNames a s) _ = drawMorphismWNames a s
 
 foldOutput (Crossing k mf) _ = drawCrossing k mf
 
@@ -71,13 +64,15 @@ rectangify od = od
           maxArity = max al ar
 
 squarify :: OutputDiagram -> OutputDiagram
-squarify od = od # rectangify
+squarify od = od
+    # rectangify
     # scaleX (maxArity/(od # width))
     where (al,ar) = od # arity
           maxArity = max al ar
 
 isoscelify :: OutputDiagram -> OutputDiagram
-isoscelify od = od # shearY ((od # arity # fst - od # arity # snd)/(2*(od # width)))
+isoscelify od = od 
+    # shearY ((od # arity # fst - od # arity # snd)/(2*(od # width)))
 
 ------------------------------------------------------------
 --  Drawing OutputDiagram  ---------------------------------

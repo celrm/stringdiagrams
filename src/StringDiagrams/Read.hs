@@ -4,7 +4,7 @@ module StringDiagrams.Read (
     readInputDiagram
 ) where
 
-import Data.Tree ( Tree(..), )
+import Data.Tree ( Tree(..) )
 import Data.Aeson
 import qualified Data.ByteString.Lazy as B
 import StringDiagrams.Types ( InputDiagram, BlockType(..), Arity )
@@ -21,16 +21,22 @@ instance FromJSON TupleDiagram where
   parseJSON (Object v) = do
     typeName <- v .: "type"
     case typeName :: String of
+      "Morphism" -> do
+        arity <- v .: "arity"
+        label <- v .: "label"
+        return $ TID (arity, Node (Morphism arity label) [])
+      "MorphismWNames" -> do
+        arityL <- v .: "arityL"
+        arityR <- v .: "arityR"
+        label <- v .: "label"
+        return $ TID ((fromIntegral . length $ arityL, fromIntegral . length $ arityR), 
+          Node (MorphismWNames (arityL,arityR) label) [])
       "Crossing" -> do
         a <- v .: "arity"
         jps <- v .:? "permutation"
         if isPerm jps (floor a) then 
           return $ TID ((a,a), Node (Crossing a jps) [])
         else fail "Invalid InputDiagram Crossing"
-      "Morphism" -> do
-        arity <- v .: "arity"
-        label <- v .: "label"
-        return $ TID (arity, Node (Morphism arity label) [])
       "Compose" -> do
         TID ((al1,ar1), t1) <- v .: "diagram1"
         TID ((al2,ar2), t2) <- v .: "diagram2"

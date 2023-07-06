@@ -1,46 +1,46 @@
 {
-    "type": "Compose",
+  "type": "Compose",
+  "diagram1": {
+    "type": "Tensor",
     "diagram1": {
       "type": "Tensor",
       "diagram1": {
-        "type": "Tensor",
-        "diagram1": {
-          "type": "Morphism",
-          "arity": [7, 2],
-          "label": "0"
-        },
-        "diagram2": {
-          "type": "Morphism",
-          "arity": [1, 2],
-          "label": "1"
-        }
+        "type": "MorphismWNames",
+        "arityL": ["a","b","c"],
+        "arityR": ["d"],
+        "label": "0"
       },
       "diagram2": {
         "type": "Morphism",
-        "arity": [2, 2],
-        "label": "2"
+        "arity": [1, 2],
+        "label": "1"
       }
     },
     "diagram2": {
-      "type": "Tensor",
+      "type": "Morphism",
+      "arity": [2, 2],
+      "label": "2"
+    }
+  },
+  "diagram2": {
+    "type": "Tensor",
+    "diagram1": {
+      "type": "Compose",
       "diagram1": {
         "type": "Morphism",
-        "arity": [1, 1],
+        "arity": [2, 1],
         "label": "3"
       },
       "diagram2": {
-        "type": "Tensor",
-        "diagram1": {
           "type": "Morphism",
-          "arity": [2, 1],
+          "arity": [1, 1],
           "label": "4"
-        },
-        "diagram2": {
-          "type": "Crossing",
-          "arity": 3,
-          "permutation": [1, 2, 0]
-        }
       }
+    },
+    "diagram2": {
+      "type": "Crossing",
+      "arity": 3,
+      "permutation": [1, 2, 0]
     }
   }
-  
+}

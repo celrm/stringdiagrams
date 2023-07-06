@@ -10,13 +10,13 @@ module StringDiagrams.Types (
     BlockType(..),
     Arity,
     OutputDiagram,
-    drawCubic,
     arity,
     pinch,
     drawMorphism,
     drawCrossing,
     outputToStringDiagram,
     outputToBrickDiagram,
+    drawMorphismWNames,
 ) where
 
 import Data.Tree ( Tree )
@@ -34,9 +34,11 @@ import Diagrams.Backend.SVG.CmdLine ( B )
 --   and internal nodes have either composition or tensoring.
 
 type Arity = (Double, Double)
+type NamedArity = ([String], [String])
 data BlockType =
     Crossing Double (Maybe [Int])
     | Morphism Arity String
+    | MorphismWNames NamedArity String
     | Compose
     | Tensor
 
@@ -153,17 +155,33 @@ pinch k od = od # deform (Deformation $ \pt -> pt # scaleY ((m' * pt^._x + n') /
 --  Base cases  --------------------------------------------
 ------------------------------------------------------------
 
+getSidePoints :: Arity -> ([P2 Double],[P2 Double])
+getSidePoints (al,ar) = (ptsl,ptsr)
+    where ptsl = [0 ^& (0.5+i) | i <-[0..al-1]]
+          ptsr = [1 ^& (0.5+i) | i <-[0..ar-1]]
+
+drawMorphismWNames :: NamedArity -> String -> OutputDiagram
+drawMorphismWNames (als,ars) s =
+    drawMorphism (al, ar) s
+    # over (ls . labels) (++ wireNames)
+    where (al, ar) = ((fromIntegral . length) als, (fromIntegral . length) ars)
+          (ptsl,ptsr) = getSidePoints (al, ar)
+          funct = zipWith (\p n -> Loc p (text n # fontSizeG 0.25 # translateY (0.0625)))
+          wireNames = funct ptsl als ++ funct ptsr ars
+          -- TODO they get drawn twice
+
 drawMorphism :: Arity -> String -> OutputDiagram
 drawMorphism (al,ar) s = OD
-    { _ps = Paths { _bd = unitSquare # alignBL, _sd = toPath (ptsl++ptsr) }
+    { _ps = Paths { _bd = unitSquare # alignBL, _sd = cubics }
     , _ls = Locs
         { _labels = [Loc ctr (text s # fontSizeG 0.25 # translateY (-0.0625))] -- TODO fit inside boxes
         , _boxes = [Loc ctr (square 0.3 # scaleY 1.5 # fc white)] } -- TODO clip instead
     }
     # pinch (-al) # pinch ar
     where ctr = 0.5 ^& 0.5
-          ptsl = [drawCubic ctr (0 ^& ((0.5+i)/al)) | i <-[0..al-1]]
-          ptsr = [drawCubic ctr (1 ^& ((0.5+i)/ar)) | i <-[0..ar-1]]
+          (sptsl,sptsr) = getSidePoints (al, ar)
+          (ptsl,ptsr) = (sptsl # scaleY (1/al),sptsr # scaleY (1/ar))
+          cubics = toPath . map (drawCubic ctr) $ (ptsl++ptsr)
 
 drawCrossing :: Integral a => Double -> Maybe [a] -> OutputDiagram
 drawCrossing k mf =

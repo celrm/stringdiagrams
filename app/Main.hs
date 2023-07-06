@@ -4,11 +4,11 @@ import Diagrams.Prelude
 import Diagrams.Backend.SVG.CmdLine ( mainWith )
 
 import StringDiagrams.Draw
-import StringDiagrams.Read ( readInputDiagram )
+import StringDiagrams.Read
 
 main :: IO ()
 main = do
-    inputDiagram <- readInputDiagram "example.json"
+    inputDiagram <- readInputDiagramWN "example.json"
     case inputDiagram of
       Nothing -> putStrLn "Failed to parse JSON file."
       Just exmp -> mainWith $ d # frame 1

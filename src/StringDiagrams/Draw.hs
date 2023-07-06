@@ -34,6 +34,8 @@ foldOutput (MorphismWNames a s) _ = drawMorphismWNames a s
 
 foldOutput (Crossing k mf) _ = drawCrossing k mf
 
+foldOutput (CrossingWNames ks mf) _ = drawCrossingWNames ks mf
+
 foldOutput Compose [od1,od2] =
     od1 # pinch middle ||| od2 # pinch (-middle)
     where [w1,w2] = width <$> [od1,od2]

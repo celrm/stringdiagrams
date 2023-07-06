@@ -8,20 +8,20 @@
 module StringDiagrams.Types (
     InputDiagram,
     BlockType(..),
-    Arity,
+    Arity, NamedArity,
     OutputDiagram,
     arity,
     pinch,
     drawMorphism,
+    drawMorphismWNames,
     drawCrossing,
+    drawCrossingWNames,
     outputToStringDiagram,
     outputToBrickDiagram,
-    drawMorphismWNames,
 ) where
 
 import Data.Tree ( Tree )
-import Safe ( atMay )
-import Data.Maybe ( fromMaybe )
+import Data.List ( nubBy )
 
 import Diagrams.Prelude
 import Diagrams.Backend.SVG.CmdLine ( B )
@@ -36,9 +36,10 @@ import Diagrams.Backend.SVG.CmdLine ( B )
 type Arity = (Double, Double)
 type NamedArity = ([String], [String])
 data BlockType =
-    Crossing Double (Maybe [Int])
-    | Morphism Arity String
+    Morphism Arity String
     | MorphismWNames NamedArity String
+    | Crossing Double [Int]
+    | CrossingWNames [String] [Int]
     | Compose
     | Tensor
 
@@ -157,18 +158,8 @@ pinch k od = od # deform (Deformation $ \pt -> pt # scaleY ((m' * pt^._x + n') /
 
 getSidePoints :: Arity -> ([P2 Double],[P2 Double])
 getSidePoints (al,ar) = (ptsl,ptsr)
-    where ptsl = [0 ^& (0.5+i) | i <-[0..al-1]]
-          ptsr = [1 ^& (0.5+i) | i <-[0..ar-1]]
-
-drawMorphismWNames :: NamedArity -> String -> OutputDiagram
-drawMorphismWNames (als,ars) s =
-    drawMorphism (al, ar) s
-    # over (ls . labels) (++ wireNames)
-    where (al, ar) = ((fromIntegral . length) als, (fromIntegral . length) ars)
-          (ptsl,ptsr) = getSidePoints (al, ar)
-          funct = zipWith (\p n -> Loc p (text n # fontSizeG 0.25 # translateY (0.0625)))
-          wireNames = funct ptsl als ++ funct ptsr ars
-          -- TODO they get drawn twice
+    where ptsl = reverse [0 ^& (0.5+i) | i <-[0..al-1]]
+          ptsr = reverse [1 ^& (0.5+i) | i <-[0..ar-1]]
 
 drawMorphism :: Arity -> String -> OutputDiagram
 drawMorphism (al,ar) s = OD
@@ -183,13 +174,33 @@ drawMorphism (al,ar) s = OD
           (ptsl,ptsr) = (sptsl # scaleY (1/al),sptsr # scaleY (1/ar))
           cubics = toPath . map (drawCubic ctr) $ (ptsl++ptsr)
 
-drawCrossing :: Integral a => Double -> Maybe [a] -> OutputDiagram
+drawMorphismWNames :: NamedArity -> String -> OutputDiagram
+drawMorphismWNames (als,ars) s =
+    drawMorphism (al, ar) s
+    # over (ls . labels) (++ wireNames)
+    where (al, ar) = ((fromIntegral . length) als, (fromIntegral . length) ars)
+          (ptsl,ptsr) = getSidePoints (al, ar)
+          funct = zipWith (\p n -> Loc p (text n # fontSizeG 0.25 # translateY 0.0625))
+          wireNames = funct ptsl als ++ funct ptsr ars
+          -- they get drawn twice
+
+drawCrossing :: Double -> [Int] -> OutputDiagram
 drawCrossing k mf =
     drawMorphism (k,k) ""
     # set (ls . boxes) []
     # set (ps . sd) (toPath pts)
-    where pts = [drawCubic (0 ^& (0.5+i)) (1 ^& (0.5+f i)) | i <-[0..k-1]]
-          f i = fromIntegral $ fromMaybe 0 $ mf >>= \ys -> ys `atMay` n where n = floor i
+    where pts = [drawCubic (0 ^& (0.5+i)) (1 ^& (0.5+ applyPerm i)) | i <-[0..k-1]]
+          applyPerm i = fromIntegral $ mf !! floor i
+
+
+drawCrossingWNames :: [String] -> [Int] -> OutputDiagram
+drawCrossingWNames ks mf =
+    drawCrossing k mf
+    # over (ls . labels) (++ wireNames)
+    where k = (fromIntegral . length) ks
+          (ptsl,ptsr) = getSidePoints (k, k)
+          funct = zipWith (\p n -> Loc p (text n # fontSizeG 0.25 # translateY 0.0625))
+          wireNames = funct ptsl ks ++ funct ptsr (map (ks !!) mf)
 
 ------------------------------------------------------------
 --  Drawing (hiding the implementation)  -------------------
@@ -198,7 +209,9 @@ drawCrossing k mf =
 -- Put together an OutputDiagram into a Diagram B
 outputToStringDiagram :: OutputDiagram -> Diagram B
 outputToStringDiagram od = mconcat
-            $  [moveOriginTo (-o) s | (Loc o s) <- od^.ls.labels]
+            -- adding nubBy to remove duplicate wire names
+            $  [moveOriginTo (-o) s | (Loc o s) <- 
+                    nubBy (\a b -> distance (loc a) (loc b) < 0.00001) (od^.ls.labels)]
             ++ [moveOriginTo (-o) s | (Loc o s) <- od^.ls.boxes]
             ++ [od^.ps.sd # strokePath]
 

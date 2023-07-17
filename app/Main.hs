@@ -3,8 +3,7 @@ module Main where
 import Diagrams.Prelude
 import Diagrams.Backend.SVG.CmdLine ( mainWith )
 
-import qualified StringDiagrams.SimpleDraw as SimpleDraw
-import qualified StringDiagrams.Draw as Draw
+import StringDiagrams.Draw
 import StringDiagrams.Read
 
 main :: IO ()
@@ -13,6 +12,10 @@ main = do
     case inputDiagram of
       Left e -> putStrLn e
       Right exmp ->  mainWith (d # frame 1)
-        where d = hsep 0.5 [e,f]
-              e = exmp # Draw.inputToOutput # Draw.isoscelify # scaleY 0.5 # Draw.outputToStrings
-              f = exmp # SimpleDraw.inputToOutput # SimpleDraw.isoscelify # scaleY 0.5 # stroke
+        where d = hsep 0.5 [e,f,g]
+              f = (exmp # inputToOutput :: Path V2 Double) 
+                # isoscelify # scaleY 0.5 # strokeOutput
+              e = (exmp # inputToOutput :: OutputDiagram) 
+                # isoscelify # scaleY 0.5 # strokeOutput
+              g = exmp # inputToOutput
+                # isoscelify # scaleY 0.5 # outputToStrings

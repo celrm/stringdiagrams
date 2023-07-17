@@ -12,8 +12,9 @@ import Data.List (sort)
 
 newtype TupleDiagram = TID (Arity, InputDiagram)
 
-isPerm :: Int -> [Int] -> Bool
-isPerm k xs = sort xs == [0..k-1]
+isPerm :: [Int] -> Bool
+isPerm xs = sort xs == [0..k-1]
+    where k = (fromIntegral . length) xs
 
 applyPerm :: [Int] -> [a] -> [a]
 applyPerm p xs = map (xs !!) p
@@ -33,15 +34,15 @@ instance FromJSON TupleDiagram where
         return $ TID ((fromIntegral . length $ arityL, fromIntegral . length $ arityR), 
           Node (MorphismWNames (arityL,arityR) label) [])
       "Crossing" -> do
-        a <- v .: "arity"
         jps <- v .: "permutation"
-        if isPerm (floor a) jps then 
-          return $ TID ((a,a), Node (Crossing a jps) [])
+        if isPerm jps then 
+          return $ TID ((fromIntegral . length $ jps, fromIntegral . length $ jps), 
+          Node (Crossing jps) [])
         else fail "Invalid InputDiagram Crossing"
       "CrossingWNames" -> do
         a <- v .: "arity"
         jps <- v .: "permutation"
-        if isPerm (length a) jps then 
+        if isPerm jps then 
           return $ TID ((fromIntegral . length $ a, fromIntegral . length $ a), 
             Node (CrossingWNames a jps) [])
         else fail "Invalid InputDiagram Crossing"
@@ -59,10 +60,10 @@ instance FromJSON TupleDiagram where
 
   parseJSON _ = fail "Invalid InputDiagram"
     
-readInputDiagram :: FilePath -> IO (Maybe InputDiagram)
+readInputDiagram :: FilePath -> IO (Either String InputDiagram)
 readInputDiagram path = do
     js <- B.readFile path
-    let maybeTuple = decode js
+    let maybeTuple = eitherDecode js
     let myDiagram (TID (_, diagram)) = diagram
     return (myDiagram <$> maybeTuple)
 
@@ -81,7 +82,7 @@ instance FromJSON NamedTupleDiagram where
       "CrossingWNames" -> do
         a <- v .: "arity"
         jps <- v .: "permutation"
-        if isPerm (length a) jps then 
+        if isPerm jps then 
           return $ NID ((a, applyPerm jps a), 
             Node (CrossingWNames a jps) [])
         else fail "Invalid InputDiagram Crossing"
@@ -99,9 +100,9 @@ instance FromJSON NamedTupleDiagram where
 
   parseJSON _ = fail "Invalid InputDiagram"
     
-readInputDiagramWN :: FilePath -> IO (Maybe InputDiagram)
+readInputDiagramWN :: FilePath -> IO (Either String InputDiagram)
 readInputDiagramWN path = do
     js <- B.readFile path
-    let maybeTuple = decode js
+    let maybeTuple = eitherDecode js
     let myDiagram (NID (_, diagram)) = diagram
     return (myDiagram <$> maybeTuple)

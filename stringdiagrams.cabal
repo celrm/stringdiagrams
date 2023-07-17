@@ -30,7 +30,8 @@ library
     hs-source-dirs:   src
     exposed-modules:  
         StringDiagrams.Read,
-        StringDiagrams.Draw
+        StringDiagrams.Draw,
+        StringDiagrams.SimpleDraw,
     other-modules:
         StringDiagrams.Types,
 

@@ -4,15 +4,11 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns     #-}
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 
-module StringDiagrams.Draw (
+module StringDiagrams.SimpleDraw (
     InputDiagram,
-    OutputDiagram,
     inputToOutput,
-    outputToStringDiagram,
     drawStringDiagram,
-    outputToBrickDiagram,
     drawBrickDiagram,
-    outputToStrings,
     rectangify,
     squarify,
     isoscelify
@@ -20,22 +16,33 @@ module StringDiagrams.Draw (
 
 import Data.Tree ( foldTree )
 import Diagrams.Prelude
-import Diagrams.Backend.SVG.CmdLine ( B )
-import StringDiagrams.Types
+import StringDiagrams.Types (BlockType (..), InputDiagram, drawSDMorphism, pinch, arity, drawSDCrossing)
 
 ------------------------------------------------------------
 --  Constructing OutputDiagram  ----------------------------
 ------------------------------------------------------------
 
 -- Patterns for [b] assume good type
-foldOutput :: (a~BlockType,b~OutputDiagram) => a -> [b] -> b
-foldOutput (Morphism a s) _ = drawMorphism a s
+foldOutput :: (a~BlockType,b~Path V2 Double) => a -> [b] -> b
+foldOutput (Morphism a@(al,ar) _) _ =
+    ((toPath [ FLinear (p2 p + 0.00001) (p2 p) |
+        p <- [(0, 0), (0, 1), (1, 1), (1, 0)]]) <>
+    drawSDMorphism a)
+    # pinch (-al) # pinch ar
 
-foldOutput (MorphismWNames a s) _ = drawMorphismWNames a s
+foldOutput (MorphismWNames (als,ars) _) _ = 
+    foldOutput (Morphism a "") []
+    where a = ((fromIntegral . length) als, (fromIntegral . length) ars)
 
-foldOutput (Crossing mf) _ = drawCrossing mf
+foldOutput (Crossing mf) _ =
+    ((toPath [ FLinear (p2 p + 0.00001) (p2 p) |
+        p <- [(0, 0), (0, 1), (1, 1), (1, 0)]]) <>
+    drawSDCrossing mf)
+    # pinch (-k) # pinch k
+    where k = (fromIntegral . length) mf
 
-foldOutput (CrossingWNames ks mf) _ = drawCrossingWNames ks mf
+foldOutput (CrossingWNames _ mf) _ =
+    foldOutput (Crossing mf) []
 
 foldOutput Compose [od1,od2] =
     od1 # pinch middle ||| od2 # pinch (-middle)
@@ -43,24 +50,24 @@ foldOutput Compose [od1,od2] =
           [h1,h2] = [od1 # arity # fst, od2 # arity # snd]
           middle = (w1*h2+w2*h1)/(w1+w2)
 
-foldOutput Tensor [od1,od2] = alignB $
-    od1 # scaleX (mw/w1) # shearY ((a2 # snd - a2 # fst)/mw)
-    ===
-    od2 # scaleX (mw/w2)
+foldOutput Tensor [od1,od2] = snugB $
+    od1 # scaleX (mw/w1) # shearY ((a2 # snd - a2 # fst)/mw) # snugB
+    <>
+    od2 # scaleX (mw/w2) # snugT
     where [w1,w2] = width <$> [od1,od2]
           mw = max w1 w2
           a2 = od2 # arity
 
 -- The main fold of OutputDiagram
-inputToOutput :: InputDiagram -> OutputDiagram
+inputToOutput :: InputDiagram -> Path V2 Double
 inputToOutput = foldTree foldOutput
 
 ------------------------------------------------------------
 --  Deforming OutputDiagram (externally)  ------------------
 ------------------------------------------------------------
 
-rectangify :: (V b ~ V2, Traced b, RealFrac (N b), Alignable b, HasOrigin b,
- Deformable b b, Enveloped b) => b -> b
+rectangify :: (V a ~ V2, Deformable a a, HasOrigin a, Alignable a, Traced a,
+ Enveloped a, RealFrac (N a)) => a -> a
 rectangify od = od
     # pinch (-maxArity)
     # pinch maxArity
@@ -68,7 +75,7 @@ rectangify od = od
           maxArity = max al ar
 
 squarify :: (V a ~ V2, Enveloped a, Deformable a a, HasOrigin a, Alignable a,
- RealFrac (N a), Traced a, R2 (V a), Transformable a) => a -> a
+ RealFrac (N a), Traced a, Transformable a) => a -> a
 squarify od = od
     # rectangify
     # scaleX (maxArity/(od # width))
@@ -77,7 +84,7 @@ squarify od = od
 
 isoscelify :: (V a ~ V2, Transformable a, Traced a, RealFrac (N a), Alignable a,
  HasOrigin a, Enveloped a) => a -> a
-isoscelify od = od 
+isoscelify od = od
     # shearY ((od # arity # fst - od # arity # snd)/(2*(od # width)))
 
 ------------------------------------------------------------
@@ -85,9 +92,9 @@ isoscelify od = od
 ------------------------------------------------------------
 
 -- From InputDiagram to Diagram directly (BD format)
-drawBrickDiagram :: InputDiagram -> QDiagram B V2 Double Any
-drawBrickDiagram = outputToBrickDiagram . isoscelify . inputToOutput
+drawBrickDiagram :: Renderable (Path V2 Double) b => InputDiagram -> QDiagram b V2 Double Any
+drawBrickDiagram = stroke . isoscelify . inputToOutput
 
 -- From InputDiagram to Diagram directly (SD format)
-drawStringDiagram :: InputDiagram -> QDiagram B V2 Double Any
-drawStringDiagram = outputToStringDiagram . isoscelify . inputToOutput
+drawStringDiagram :: Renderable (Path V2 Double) b => InputDiagram -> QDiagram b V2 Double Any
+drawStringDiagram = stroke . isoscelify . inputToOutput

@@ -13,11 +13,14 @@ module StringDiagrams.Types (
     arity,
     pinch,
     drawMorphism,
+    drawSDMorphism,
+    drawSDCrossing,
     drawMorphismWNames,
     drawCrossing,
     drawCrossingWNames,
     outputToStringDiagram,
     outputToBrickDiagram,
+    outputToStrings
 ) where
 
 import Data.Tree ( Tree )
@@ -38,7 +41,7 @@ type NamedArity = ([String], [String])
 data BlockType =
     Morphism Arity String
     | MorphismWNames NamedArity String
-    | Crossing Double [Int]
+    | Crossing [Int]
     | CrossingWNames [String] [Int]
     | Compose
     | Tensor
@@ -139,12 +142,13 @@ juxtaposeByTrace v a1 a2 =
 ------------------------------------------------------------
 
 -- Finds the OutputDiagram's arity
-arity :: OutputDiagram -> Arity
+arity :: (V a ~ V2, Traced a, RealFrac (N a), Alignable a, HasOrigin a) => a -> (N a, N a)
 arity od = (od # findHeight, od # alignR # findHeight)
-    where findHeight = maybe 0 (^._y) . maxRayTraceP origin unitY
+    where findHeight = fromInteger . ceiling . (\x -> x-0.1) . maybe 1 (^._y) . maxRayTraceP origin unitY
 
 -- Deformation that moves a quadrilateral's upper vertex to |k| (k<0 => left, k>0 => right)
-pinch :: Double -> OutputDiagram -> OutputDiagram
+pinch :: (V a ~ V2, Deformable a a, HasOrigin a, Alignable a,
+ Traced a, Enveloped a, RealFrac (N a)) => N a -> a -> a
 pinch k od = od # deform (Deformation $ \pt -> pt # scaleY ((m' * pt^._x + n') / (m * pt^._x + n)))
     where (al,ar) = od # arity
           w = od # width
@@ -156,23 +160,29 @@ pinch k od = od # deform (Deformation $ \pt -> pt # scaleY ((m' * pt^._x + n') /
 --  Base cases  --------------------------------------------
 ------------------------------------------------------------
 
-getSidePoints :: Arity -> ([P2 Double],[P2 Double])
+getSidePoints :: Arity -> ([Point V2 Double], [Point V2 Double])
 getSidePoints (al,ar) = (ptsl,ptsr)
     where ptsl = reverse [0 ^& (0.5+i) | i <-[0..al-1]]
           ptsr = reverse [1 ^& (0.5+i) | i <-[0..ar-1]]
 
+drawSDMorphism :: Arity -> Path V2 Double
+drawSDMorphism (al,ar) = toPath . map (drawCubic (0.5 ^& 0.5)) $ (ptsl++ptsr)
+    where (sptsl,sptsr) = getSidePoints (al, ar)
+          (ptsl,ptsr) = (sptsl # scaleY (1/al),sptsr # scaleY (1/ar))
+
+drawSDCrossing :: [Int] -> Path V2 Double
+drawSDCrossing mf = toPath [drawCubic (0 ^& ((0.5+i) / k)) 
+    (1 ^& ((0.5 + fromIntegral (mf !! floor i)) / k)) | i <-[0..k-1]]
+    where k = (fromIntegral . length) mf
+
 drawMorphism :: Arity -> String -> OutputDiagram
 drawMorphism (al,ar) s = OD
-    { _ps = Paths { _bd = unitSquare # alignBL, _sd = cubics }
+    { _ps = Paths { _bd = unitSquare # alignBL, _sd = drawSDMorphism (al,ar) }
     , _ls = Locs
         { _labels = [Loc ctr (text s # fontSizeG 0.25 # translateY (-0.0625))] -- TODO fit inside boxes
         , _boxes = [Loc ctr (square 0.3 # scaleY 1.5 # fc white)] } -- TODO clip instead
-    }
-    # pinch (-al) # pinch ar
+    } # pinch (-al) # pinch ar
     where ctr = 0.5 ^& 0.5
-          (sptsl,sptsr) = getSidePoints (al, ar)
-          (ptsl,ptsr) = (sptsl # scaleY (1/al),sptsr # scaleY (1/ar))
-          cubics = toPath . map (drawCubic ctr) $ (ptsl++ptsr)
 
 drawMorphismWNames :: NamedArity -> String -> OutputDiagram
 drawMorphismWNames (als,ars) s =
@@ -184,20 +194,19 @@ drawMorphismWNames (als,ars) s =
           wireNames = funct ptsl als ++ funct ptsr ars
           -- they get drawn twice
 
-drawCrossing :: Double -> [Int] -> OutputDiagram
-drawCrossing k mf =
-    drawMorphism (k,k) ""
-    # set (ls . boxes) []
-    # set (ps . sd) (toPath pts)
-    where pts = [drawCubic (0 ^& (0.5+i)) (1 ^& (0.5+ applyPerm i)) | i <-[0..k-1]]
-          applyPerm i = fromIntegral $ mf !! floor i
-
+drawCrossing :: [Int] -> OutputDiagram
+drawCrossing mf = OD
+    { _ps = Paths { _bd = unitSquare # alignBL
+    , _sd = drawSDCrossing mf }
+    , _ls = Locs { _labels = [], _boxes = [] }
+    } # pinch (-k) # pinch k
+    where k = (fromIntegral . length) mf
 
 drawCrossingWNames :: [String] -> [Int] -> OutputDiagram
 drawCrossingWNames ks mf =
-    drawCrossing k mf
+    drawCrossing mf
     # over (ls . labels) (++ wireNames)
-    where k = (fromIntegral . length) ks
+    where k = (fromIntegral . length) mf
           (ptsl,ptsr) = getSidePoints (k, k)
           funct = zipWith (\p n -> Loc p (text n # fontSizeG 0.25 # translateY 0.0625))
           wireNames = funct ptsl ks ++ funct ptsr (map (ks !!) mf)
@@ -210,7 +219,7 @@ drawCrossingWNames ks mf =
 outputToStringDiagram :: OutputDiagram -> Diagram B
 outputToStringDiagram od = mconcat
             -- adding nubBy to remove duplicate wire names
-            $  [moveOriginTo (-o) s | (Loc o s) <- 
+            $  [moveOriginTo (-o) s | (Loc o s) <-
                     nubBy (\a b -> distance (loc a) (loc b) < 0.00001) (od^.ls.labels)]
             ++ [moveOriginTo (-o) s | (Loc o s) <- od^.ls.boxes]
             ++ [od^.ps.sd # strokePath]
@@ -220,3 +229,6 @@ outputToBrickDiagram :: OutputDiagram -> Diagram B
 outputToBrickDiagram od = mconcat
             $  [moveOriginTo (-o) s | (Loc o s) <- od^.ls.labels]
             ++ [od^.ps.bd # strokePath]
+
+outputToStrings :: OutputDiagram -> Diagram B
+outputToStrings od = mconcat [od^.ps.sd # strokePath]

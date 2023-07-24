@@ -31,9 +31,9 @@ library
     exposed-modules:  
         StringDiagrams.Read,
         StringDiagrams.Draw,
-        StringDiagrams.SimpleDraw,
-    other-modules:
-        StringDiagrams.Types,
+        StringDiagrams.Draw.BrickDiagram,
+        StringDiagrams.Draw.StringDiagram,
+        StringDiagrams.Draw.OutputDiagram,
 
 executable stringdiagrams
     import:           shared-properties

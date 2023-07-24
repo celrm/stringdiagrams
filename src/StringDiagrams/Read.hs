@@ -1,14 +1,37 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module StringDiagrams.Read (
+    InputDiagram, BlockType(..), Arity, NamedArity,
     readInputDiagram, readInputDiagramWN
 ) where
 
 import Data.Tree ( Tree(..) )
 import Data.Aeson
 import qualified Data.ByteString.Lazy as B
-import StringDiagrams.Types ( InputDiagram, BlockType(..), Arity, NamedArity)
 import Data.List (sort)
+
+------------------------------------------------------------
+--  InputDiagram type  -------------------------------------
+------------------------------------------------------------
+
+-- | A binary tree-like structure where leaves are either boxes or string crossings
+--   and internal nodes have either composition or tensoring.
+
+type Arity = (Double, Double)
+type NamedArity = ([String], [String])
+data BlockType =
+    Morphism Arity String
+    | MorphismWNames NamedArity String
+    | Crossing [Int]
+    | CrossingWNames [String] [Int]
+    | Compose
+    | Tensor
+
+type InputDiagram = Tree BlockType
+
+------------------------------------------------------------
+--  Reading InputDiagram from JSON  -------------------------
+------------------------------------------------------------
 
 newtype TupleDiagram = TID (Arity, InputDiagram)
 

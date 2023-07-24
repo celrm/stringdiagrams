@@ -11,6 +11,7 @@ monitor_file() {
     while true; do
         echo $command_to_execute
         $command_to_execute  # Execute the command
+        echo "Done"
         inotifywait -e modify "$file_to_monitor"  >/dev/null 2>&1 # Wait for the file to be modified
     done
 }

@@ -6,40 +6,30 @@
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE InstanceSigs #-}
+{-# OPTIONS_GHC -Wno-unused-top-binds #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
-module StringDiagrams.Types (
-    Arity,
-    NamedArity,
-    BlockType(..), 
-    InputDiagram,
-    Paths(..),
-    Locatables(..),
-    OutputDiagram(..),
-    drawCubic
+module StringDiagrams.Draw.OutputDiagram (
+    OutputDiagram,
+    outputToStringDiagram,
+    outputToBrickDiagram,
+    outputToStrings,
 ) where
+
+import Data.List ( nubBy )
 
 import Diagrams.Prelude
 import Diagrams.Backend.SVG.CmdLine ( B )
-import Data.Tree (Tree)
 
-------------------------------------------------------------
---  InputDiagram type  -------------------------------------
-------------------------------------------------------------
-
--- | A binary tree-like structure where leaves are either boxes or string crossings
---   and internal nodes have either composition or tensoring.
-
-type Arity = (Double, Double)
-type NamedArity = ([String], [String])
-data BlockType =
-    Morphism Arity String
-    | MorphismWNames NamedArity String
-    | Crossing [Int]
-    | CrossingWNames [String] [Int]
-    | Compose
-    | Tensor
-
-type InputDiagram = Tree BlockType
+import StringDiagrams.Draw
+    ( OutputClass(..),
+      pinch,
+      drawCubic,
+      getSidePoints,
+      drawWires,
+      drawCrossingWires )
 
 ------------------------------------------------------------
 --  OutputDiagram type  ------------------------------------
@@ -73,11 +63,6 @@ instance Semigroup OutputDiagram where
 ------------------------------------------------------------
 --  OutputDiagram is Deformable ----------------------------
 ------------------------------------------------------------
-
--- Chooses control points in the same Y-coord than the endpoints
-drawCubic :: (R1 v, Metric v, Fractional n) => Point v n -> Point v n -> FixedSegment v n
-drawCubic o f = FCubic o (c o f) (c f o) f
-    where c x y = x .+^ (0.5 *^ project unitX (y .-. x))
 
 -- This is a custom "deformation" for Paths such that only the endpoints (and control points) are moved
 instance r ~ Paths => Deformable Paths r where
@@ -129,3 +114,60 @@ juxtaposeByTrace v a1 a2 =
     _                  -> a2
   where mv1 = negated <$> maxTraceV origin v a1
         mv2 = maxTraceV origin (negated v) a2
+
+------------------------------------------------------------
+--  OutputDiagram is OutputClass ---------------------------
+------------------------------------------------------------
+
+instance OutputClass OutputDiagram where
+    drawMorphism (al, ar) s = OD
+        { _ps = Paths { _bd = unitSquare # alignBL, _sd = drawWires (al,ar) }
+        , _ls = Locs
+            { _labels = [Loc ctr (text s # fontSizeG 0.25 # translateY (-0.0625))] -- TODO fit inside boxes
+            , _boxes = [Loc ctr (square 0.3 # scaleY 1.5 # fc white)] } -- TODO clip instead
+        } # pinch (-al) # pinch ar
+        where ctr = 0.5 ^& 0.5
+
+    drawMorphismWNames (als, ars) s =
+        drawMorphism (al, ar) s
+        # over (ls . labels) (++ wireNames)
+        where (al, ar) = ((fromIntegral . length) als, (fromIntegral . length) ars)
+              (ptsl,ptsr) = getSidePoints (al, ar)
+              funct = zipWith (\p n -> Loc p (text n # fontSizeG 0.25 # translateY 0.0625))
+              wireNames = funct ptsl als ++ funct ptsr ars
+              -- they get drawn twice
+
+    drawCrossing mf = OD
+        { _ps = Paths { _bd = unitSquare # alignBL
+        , _sd = drawCrossingWires mf }
+        , _ls = Locs { _labels = [], _boxes = [] }
+        } # pinch (-k) # pinch k
+        where k = (fromIntegral . length) mf
+
+    drawCrossingWNames ks mf =
+        drawCrossing mf
+        # over (ls . labels) (++ wireNames)
+        where k = (fromIntegral . length) mf
+              (ptsl,ptsr) = getSidePoints (k, k)
+              funct = zipWith (\p n -> Loc p (text n # fontSizeG 0.25 # translateY 0.0625))
+              wireNames = funct ptsl ks ++ funct ptsr (map (ks !!) mf)
+
+    strokeOutput = outputToStringDiagram
+
+-- Put together an OutputDiagram into a Diagram B
+outputToStringDiagram :: OutputDiagram -> Diagram B
+outputToStringDiagram od = mconcat
+            -- adding nubBy to remove duplicate wire names
+            $  [moveOriginTo (-o) s | (Loc o s) <-
+                    nubBy (\a b -> distance (loc a) (loc b) < 0.00001) (od^.ls.labels)]
+            ++ [moveOriginTo (-o) s | (Loc o s) <- od^.ls.boxes]
+            ++ [outputToStrings od]
+
+-- Put together an OutputDiagram into a Diagram B
+outputToBrickDiagram :: OutputDiagram -> Diagram B
+outputToBrickDiagram od = mconcat
+            $  [moveOriginTo (-o) s | (Loc o s) <- od^.ls.labels]
+            ++ [outputToStrings od]
+
+outputToStrings :: OutputDiagram -> Diagram B
+outputToStrings od = od^.ps.sd # strokePath

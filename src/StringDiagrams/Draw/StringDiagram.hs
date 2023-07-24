@@ -17,6 +17,7 @@ import StringDiagrams.Draw
       pinch,
       drawWires,
       drawCrossingWires ) 
+import StringDiagrams.Read (LeafType(..))
 
 ------------------------------------------------------------
 --  Drawing (hiding the implementation)  -------------------
@@ -26,17 +27,16 @@ cornersPath :: Path V2 Double
 cornersPath = toPath [ FLinear (p2 p + 0.00001) (p2 p) | p <- [(0, 0), (0, 1), (1, 1), (1, 0)]]
 
 instance OutputClass (Path V2 Double) where
-    drawMorphism a@(al, ar) _ =
-        (cornersPath <> drawWires a)
-        # pinch (-al) # pinch ar
-
-    drawCrossing mf =
-        (cornersPath <> drawCrossingWires mf) 
-        # pinch (-k) # pinch k
-        where k = (fromIntegral . length) mf
-
     strokeOutput = strokePath
 
-    drawMorphismWNames (als, ars) _ = drawMorphism ((fromIntegral . length) als, (fromIntegral . length) ars) ""
+    drawLeaf (Morphism a@(al, ar) _) =
+        (cornersPath <> drawWires a) # pinch (-al) # pinch ar
 
-    drawCrossingWNames _ = drawCrossing
+    drawLeaf (MorphismWNames (als, ars) _) = drawLeaf $
+        Morphism (fl als, fl ars) "" where fl = fromIntegral . length
+
+    drawLeaf (Crossing mf) =
+        (cornersPath <> drawCrossingWires mf) # pinch (-k) # pinch k
+        where k = (fromIntegral . length) mf
+
+    drawLeaf (CrossingWNames _ mf) = drawLeaf $ Crossing mf

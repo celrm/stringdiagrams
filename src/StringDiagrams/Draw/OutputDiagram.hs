@@ -26,10 +26,11 @@ import Diagrams.Backend.SVG.CmdLine ( B )
 import StringDiagrams.Draw
     ( OutputClass(..),
       pinch,
-      drawCubic,
-      getSidePoints,
+      flatCubic,
+      connectionPoints,
       drawWires,
       drawCrossingWires )
+import StringDiagrams.Read (LeafType(..))
 
 ------------------------------------------------------------
 --  OutputDiagram type  ------------------------------------
@@ -72,7 +73,7 @@ instance r ~ Paths => Deformable Paths r where
               deformPath = toPath . map (map (deformFixedSeg . mkFixedSeg)) . pathLocSegments
               -- from Diagrams.Deform.approx (slightly changed)
               deformFixedSeg (FLinear p0 p1) = FLinear (deform t p0) (deform t p1)
-              deformFixedSeg (FCubic p0 _ _ p1) = drawCubic (deform t p0) (deform t p1)
+              deformFixedSeg (FCubic p0 _ _ p1) = flatCubic (deform t p0) (deform t p1)
 
 -- This is a custom "deformation" for Located objects such that only the origin is moved
 instance r ~ Locatables => Deformable Locatables r where
@@ -120,39 +121,39 @@ juxtaposeByTrace v a1 a2 =
 ------------------------------------------------------------
 
 instance OutputClass OutputDiagram where
-    drawMorphism (al, ar) s = OD
+    strokeOutput = outputToStringDiagram
+
+    drawLeaf (Morphism (al, ar) s) = OD
         { _ps = Paths { _bd = unitSquare # alignBL, _sd = drawWires (al,ar) }
         , _ls = Locs
             { _labels = [Loc ctr (text s # fontSizeG 0.25 # translateY (-0.0625))] -- TODO fit inside boxes
             , _boxes = [Loc ctr (square 0.3 # scaleY 1.5 # fc white)] } -- TODO clip instead
         } # pinch (-al) # pinch ar
         where ctr = 0.5 ^& 0.5
-
-    drawMorphismWNames (als, ars) s =
-        drawMorphism (al, ar) s
+    
+    drawLeaf (MorphismWNames (als, ars) s) =
+        drawLeaf (Morphism (al, ar) s)
         # over (ls . labels) (++ wireNames)
         where (al, ar) = ((fromIntegral . length) als, (fromIntegral . length) ars)
-              (ptsl,ptsr) = getSidePoints (al, ar)
+              (ptsl,ptsr) = connectionPoints (al, ar)
               funct = zipWith (\p n -> Loc p (text n # fontSizeG 0.25 # translateY 0.0625))
               wireNames = funct ptsl als ++ funct ptsr ars
               -- they get drawn twice
 
-    drawCrossing mf = OD
+    drawLeaf (Crossing mf) = OD
         { _ps = Paths { _bd = unitSquare # alignBL
         , _sd = drawCrossingWires mf }
         , _ls = Locs { _labels = [], _boxes = [] }
         } # pinch (-k) # pinch k
         where k = (fromIntegral . length) mf
 
-    drawCrossingWNames ks mf =
-        drawCrossing mf
+    drawLeaf (CrossingWNames ks mf) =
+        drawLeaf (Crossing mf)
         # over (ls . labels) (++ wireNames)
         where k = (fromIntegral . length) mf
-              (ptsl,ptsr) = getSidePoints (k, k)
+              (ptsl,ptsr) = connectionPoints (k, k)
               funct = zipWith (\p n -> Loc p (text n # fontSizeG 0.25 # translateY 0.0625))
               wireNames = funct ptsl ks ++ funct ptsr (map (ks !!) mf)
-
-    strokeOutput = outputToStringDiagram
 
 -- Put together an OutputDiagram into a Diagram B
 outputToStringDiagram :: OutputDiagram -> Diagram B

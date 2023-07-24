@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module StringDiagrams.Read (
-    InputDiagram, BlockType(..), Arity, NamedArity,
+    LeafType(..), NodeType(..), Arity, NamedArity,
     readInputDiagram, readInputDiagramWN
 ) where
 
@@ -19,21 +19,21 @@ import Data.List (sort)
 
 type Arity = (Double, Double)
 type NamedArity = ([String], [String])
-data BlockType =
-    Morphism Arity String
+
+data LeafType = Morphism Arity String
     | MorphismWNames NamedArity String
     | Crossing [Int]
     | CrossingWNames [String] [Int]
+
+data NodeType = Leaf LeafType
     | Compose
     | Tensor
-
-type InputDiagram = Tree BlockType
 
 ------------------------------------------------------------
 --  Reading InputDiagram from JSON  -------------------------
 ------------------------------------------------------------
 
-newtype TupleDiagram = TID (Arity, InputDiagram)
+newtype TupleDiagram = TID (Arity, Tree NodeType)
 
 isPerm :: [Int] -> Bool
 isPerm xs = sort xs == [0..k-1]
@@ -49,25 +49,25 @@ instance FromJSON TupleDiagram where
       "Morphism" -> do
         arity <- v .: "arity"
         label <- v .: "label"
-        return $ TID (arity, Node (Morphism arity label) [])
+        return $ TID (arity, Node (Leaf $ Morphism arity label) [])
       "MorphismWNames" -> do
         arityL <- v .: "arityL"
         arityR <- v .: "arityR"
         label <- v .: "label"
         return $ TID ((fromIntegral . length $ arityL, fromIntegral . length $ arityR), 
-          Node (MorphismWNames (arityL,arityR) label) [])
+          Node (Leaf $ MorphismWNames (arityL,arityR) label) [])
       "Crossing" -> do
         jps <- v .: "permutation"
         if isPerm jps then 
           return $ TID ((fromIntegral . length $ jps, fromIntegral . length $ jps), 
-          Node (Crossing jps) [])
+          Node (Leaf $ Crossing jps) [])
         else fail "Invalid InputDiagram Crossing"
       "CrossingWNames" -> do
         a <- v .: "arity"
         jps <- v .: "permutation"
         if isPerm jps then 
           return $ TID ((fromIntegral . length $ a, fromIntegral . length $ a), 
-            Node (CrossingWNames a jps) [])
+            Node (Leaf $ CrossingWNames a jps) [])
         else fail "Invalid InputDiagram Crossing"
       "Compose" -> do
         TID ((al1,ar1), t1) <- v .: "diagram1"
@@ -83,14 +83,14 @@ instance FromJSON TupleDiagram where
 
   parseJSON _ = fail "Invalid InputDiagram"
     
-readInputDiagram :: FilePath -> IO (Either String InputDiagram)
+readInputDiagram :: FilePath -> IO (Either String (Tree NodeType))
 readInputDiagram path = do
     js <- B.readFile path
     let maybeTuple = eitherDecode js
     let myDiagram (TID (_, diagram)) = diagram
     return (myDiagram <$> maybeTuple)
 
-newtype NamedTupleDiagram = NID (NamedArity, InputDiagram)
+newtype NamedTupleDiagram = NID (NamedArity, Tree NodeType)
 
 instance FromJSON NamedTupleDiagram where
   parseJSON (Object v) = do
@@ -101,13 +101,13 @@ instance FromJSON NamedTupleDiagram where
         arityR <- v .: "arityR"
         label <- v .: "label"
         return $ NID ((arityL, arityR), 
-          Node (MorphismWNames (arityL,arityR) label) [])
+          Node (Leaf $ MorphismWNames (arityL,arityR) label) [])
       "CrossingWNames" -> do
         a <- v .: "arity"
         jps <- v .: "permutation"
         if isPerm jps then 
           return $ NID ((a, applyPerm jps a), 
-            Node (CrossingWNames a jps) [])
+            Node (Leaf $ CrossingWNames a jps) [])
         else fail "Invalid InputDiagram Crossing"
       "Compose" -> do
         NID ((al1,ar1), t1) <- v .: "diagram1"
@@ -123,7 +123,7 @@ instance FromJSON NamedTupleDiagram where
 
   parseJSON _ = fail "Invalid InputDiagram"
     
-readInputDiagramWN :: FilePath -> IO (Either String InputDiagram)
+readInputDiagramWN :: FilePath -> IO (Either String (Tree NodeType))
 readInputDiagramWN path = do
     js <- B.readFile path
     let maybeTuple = eitherDecode js

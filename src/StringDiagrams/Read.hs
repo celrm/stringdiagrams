@@ -42,6 +42,9 @@ isPerm xs = sort xs == [0..k-1]
 applyPerm :: [Int] -> [a] -> [a]
 applyPerm p xs = map (xs !!) p
 
+-- | Reads a JSON object and returns a tree of NodeType
+--   while checking that the input is valid (i.e. the arity of the nodes match)
+--   If the input is not valid, it returns an error message.
 instance FromJSON TupleDiagram where
   parseJSON (Object v) = do
     typeName <- v .: "type"
@@ -57,17 +60,17 @@ instance FromJSON TupleDiagram where
         return $ TID ((fromIntegral . length $ arityL, fromIntegral . length $ arityR), 
           Node (Leaf $ MorphismWNames (arityL,arityR) label) [])
       "Crossing" -> do
-        jps <- v .: "permutation"
-        if isPerm jps then 
-          return $ TID ((fromIntegral . length $ jps, fromIntegral . length $ jps), 
-          Node (Leaf $ Crossing jps) [])
+        per <- v .: "permutation"
+        if isPerm per then 
+          return $ TID ((fromIntegral . length $ per, fromIntegral . length $ per), 
+          Node (Leaf $ Crossing per) [])
         else fail "Invalid InputDiagram Crossing"
       "CrossingWNames" -> do
         a <- v .: "arity"
-        jps <- v .: "permutation"
-        if isPerm jps then 
+        per <- v .: "permutation"
+        if isPerm per then 
           return $ TID ((fromIntegral . length $ a, fromIntegral . length $ a), 
-            Node (Leaf $ CrossingWNames a jps) [])
+            Node (Leaf $ CrossingWNames a per) [])
         else fail "Invalid InputDiagram Crossing"
       "Compose" -> do
         TID ((al1,ar1), t1) <- v .: "diagram1"
@@ -82,7 +85,9 @@ instance FromJSON TupleDiagram where
       _ -> fail "Invalid InputDiagram type"
 
   parseJSON _ = fail "Invalid InputDiagram"
-    
+  
+-- | Takes a JSON file path and returns a tree of NodeType or an error message
+--   Only checks that the arity of the nodes match when composing
 readInputDiagram :: FilePath -> IO (Either String (Tree NodeType))
 readInputDiagram path = do
     js <- B.readFile path
@@ -92,6 +97,9 @@ readInputDiagram path = do
 
 newtype NamedTupleDiagram = NID (NamedArity, Tree NodeType)
 
+-- | Reads a JSON object and returns a tree of NodeType
+--   while checking that the input is valid (i.e. the arity of the nodes match
+--   and the names of each wire match when composing)
 instance FromJSON NamedTupleDiagram where
   parseJSON (Object v) = do
     typeName <- v .: "type"
@@ -104,10 +112,10 @@ instance FromJSON NamedTupleDiagram where
           Node (Leaf $ MorphismWNames (arityL,arityR) label) [])
       "CrossingWNames" -> do
         a <- v .: "arity"
-        jps <- v .: "permutation"
-        if isPerm jps then 
-          return $ NID ((a, applyPerm jps a), 
-            Node (Leaf $ CrossingWNames a jps) [])
+        per <- v .: "permutation"
+        if isPerm per then 
+          return $ NID ((a, applyPerm per a), 
+            Node (Leaf $ CrossingWNames a per) [])
         else fail "Invalid InputDiagram Crossing"
       "Compose" -> do
         NID ((al1,ar1), t1) <- v .: "diagram1"
@@ -122,7 +130,9 @@ instance FromJSON NamedTupleDiagram where
       _ -> fail "Invalid InputDiagram type"
 
   parseJSON _ = fail "Invalid InputDiagram"
-    
+
+-- | Takes a JSON file path and returns a tree of NodeType or an error message
+--  Checks that the names of each wire match when composing
 readInputDiagramWN :: FilePath -> IO (Either String (Tree NodeType))
 readInputDiagramWN path = do
     js <- B.readFile path

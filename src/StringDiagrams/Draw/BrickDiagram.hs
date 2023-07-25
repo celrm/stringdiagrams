@@ -15,7 +15,8 @@ instance OutputClass (Path V2 Double) where
 
     strokeOutput = strokePath
 
-    drawLeaf (Morphism (al, ar) _) = unitSquare # alignBL # pinch (-al) # pinch ar
+    drawLeaf (Morphism (al, ar) _) = 
+        unitSquare # alignBL # pinch (-al) # pinch ar
     drawLeaf (MorphismWNames (als, ars) _) = drawLeaf $
         Morphism (fl als, fl ars) "" where fl = fromIntegral . length
     drawLeaf (Crossing mf) = drawLeaf $ 

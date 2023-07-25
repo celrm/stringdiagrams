@@ -8,6 +8,19 @@
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 {-# LANGUAGE ConstraintKinds #-}
 
+-- | Module for drawing string diagrams
+--  The main typeclass is OutputClass, which is used to draw the diagrams
+--  but has to be instantiated. A default instance OutputDiagram is provided
+--  at StringDiagrams.Draw.OutputDiagram.
+
+-- Example usage:
+-- main = do
+--   inputDiagram <- readInputDiagram "example.json"
+--   case inputDiagram of
+--     Left e -> putStrLn e
+--     Right inp ->  mainWith $ 
+--       (inp # inputToOutput :: OutputDiagram) # strokeOutput
+
 module StringDiagrams.Draw (
     arity, pinch,
     OutputClass(..),
@@ -21,22 +34,22 @@ module StringDiagrams.Draw (
 import Data.Tree ( Tree, foldTree )
 
 import Diagrams.Prelude
-import Diagrams.Backend.SVG.CmdLine ( B )
 import StringDiagrams.Read (Arity, NodeType (..), LeafType)
+import Diagrams.Backend.SVG (B)
 
 ------------------------------------------------------------
 --  Diagrams utilities  ------------------------------------
 ------------------------------------------------------------
 
-type ArityClass a = (InSpace V2 Double a, Traced a, Alignable a, HasOrigin a)
+type AType a=(InSpace V2 Double a, Traced a, Alignable a, HasOrigin a)
 
--- Finds the diagram's arity (height of each side)
-arity :: ArityClass a => a -> (N a, N a)
+-- | Finds the diagram's arity (height of each side)
+arity :: AType a => a -> (N a, N a)
 arity od = (od # findHeight, od # alignR # findHeight)
     where findHeight = maybe 0 (^._y) . maxRayTraceP origin unitY
 
--- Deformation that moves a quadrilateral's upper vertex to |k| (k<0 => left, k>0 => right)
-pinch :: (Deformable a a, Enveloped a, ArityClass a) => N a -> a -> a
+-- | Deformation that moves a quadrilateral's upper vertex to |k| (k<0 => left, k>0 => right)
+pinch :: (Deformable a a, Enveloped a, AType a) => N a -> a -> a
 pinch h od = od # deform (Deformation $ \pt ->
     pt # scaleY (fxb pt / fx a pt))
     where a@(al, ar) = od # arity
@@ -45,15 +58,18 @@ pinch h od = od # deform (Deformation $ \pt ->
 
 ------------------------------------------------------------
 --  OutputClass typeclass  ---------------------------------
-------------------------------------------------------------
+------------------------------------------------------------          
 
-class (Deformable a a, Enveloped a, ArityClass a, Transformable a, Juxtaposable a, Semigroup a)
+-- | Typeclass for output diagrams
+--   Minimal complete definition: drawLeaf, strokeOutput
+--   Default definitions: compose, tensor, drawNode, inputToOutput (should not be overriden)
+class (Deformable a a, Enveloped a, AType a, Transformable a, Juxtaposable a, Semigroup a)
     => OutputClass a where
     compose :: a -> a -> a
     compose od1 od2 = od1 # pinch middle ||| od2 # pinch (-middle)
         where [w1, w2] = [width od1, width od2]
-              [h1, h2] = [od1 # arity # fst, od2 # arity # snd]
-              middle = (w1*h2 + w2*h1)/(w1 + w2)
+              [l_1, r_2] = [od1 # arity # fst, od2 # arity # snd]
+              middle = (w1*r_2 + w2*l_1)/(w1 + w2)
 
     tensor :: a -> a -> a
     tensor od1 od2 = alignB $
@@ -65,13 +81,13 @@ class (Deformable a a, Enveloped a, ArityClass a, Transformable a, Juxtaposable 
 
     drawLeaf :: LeafType -> a
 
-    drawOutput :: NodeType -> [a] -> a
-    drawOutput (Leaf l) _ = drawLeaf l
-    drawOutput Compose [od1,od2] = compose od1 od2
-    drawOutput Tensor [od1,od2] = tensor od1 od2
+    drawNode :: NodeType -> [a] -> a
+    drawNode (Leaf l) _ = drawLeaf l
+    drawNode Compose [od1,od2] = compose od1 od2
+    drawNode Tensor [od1,od2] = tensor od1 od2
 
     inputToOutput :: Tree NodeType -> a
-    inputToOutput = foldTree drawOutput
+    inputToOutput = foldTree drawNode
 
     strokeOutput :: a -> Diagram B
 
@@ -79,24 +95,24 @@ class (Deformable a a, Enveloped a, ArityClass a, Transformable a, Juxtaposable 
 -- Drawing utilities  --------------------------------------
 ------------------------------------------------------------
 
--- Chooses control points in the same Y-coord than the endpoints
+-- | Chooses control points in the same Y-coord as the endpoints
 flatCubic :: (R1 v, Metric v, Fractional n) => Point v n -> Point v n -> FixedSegment v n
 flatCubic o f = FCubic o (c o f) (c f o) f
     where c x y = x .+^ (0.5 *^ project unitX (y .-. x))
 
--- Gets equally spaced lists of points for the left and right sides according to the arity
+-- | Gets equally spaced lists of points for the left and right sides according to the arity
 connectionPoints :: Arity -> ([Point V2 Double], [Point V2 Double])
 connectionPoints (al, ar) = (ptsl, ptsr)
     where ptsl = reverse [0 ^& (0.5+i) | i <-[0..al-1]]
           ptsr = reverse [1 ^& (0.5+i) | i <-[0..ar-1]]
 
--- Draws the wires of a morphism
+-- | Draws the wires of a morphism
 drawWires :: Arity -> Path V2 Double
 drawWires (al, ar) = toPath . map (flatCubic (0.5 ^& 0.5)) $ ptsl++ptsr
     where (sptsl, sptsr) = connectionPoints (al, ar)
           (ptsl, ptsr) = (sptsl # scaleY (1/al),sptsr # scaleY (1/ar))
 
--- Draws the wires of a crossing
+-- | Draws the wires of a crossing
 drawCrossingWires :: [Int] -> Path V2 Double
 drawCrossingWires mf = toPath [flatCubic (0 ^& ((0.5+i) / k))
     (1 ^& ((0.5 + fromIntegral (mf !! floor i)) / k)) | i <-[0..k-1]]
@@ -106,20 +122,23 @@ drawCrossingWires mf = toPath [flatCubic (0 ^& ((0.5+i) / k))
 --  External utilities  -------------------------------------
 ------------------------------------------------------------
 
-rectangify :: (Deformable a a, Enveloped a, ArityClass a) => a -> a
+-- | Deformation that makes a diagram rectangular
+rectangify :: (Deformable a a, Enveloped a, AType a) => a -> a
 rectangify od = od
     # pinch (-maxArity)
     # pinch maxArity
     where (al,ar) = od # arity
           maxArity = max al ar
 
-squarify :: (Deformable a a, Enveloped a, ArityClass a, Transformable a) => a -> a
+-- | Deformation that makes a diagram square
+squarify :: (Deformable a a, Enveloped a, AType a, Transformable a) => a -> a
 squarify od = od
     # rectangify
     # scaleX (maxArity/(od # width))
     where (al,ar) = od # arity
           maxArity = max al ar
 
-isoscelify :: (Enveloped a, ArityClass a, Transformable a) => a -> a
+-- | Deformation that makes a diagram an isosceles trapezoid
+isoscelify :: (Enveloped a, AType a, Transformable a) => a -> a
 isoscelify od = od
     # shearY ((od # arity # fst - od # arity # snd)/(2*(od # width)))

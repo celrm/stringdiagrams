@@ -21,7 +21,7 @@ module StringDiagrams.Draw.OutputDiagram (
 import Data.List ( nubBy )
 
 import Diagrams.Prelude
-import Diagrams.Backend.SVG.CmdLine ( B )
+import Diagrams.Backend.SVG ( B )
 
 import StringDiagrams.Draw
     ( OutputClass(..),

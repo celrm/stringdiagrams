@@ -14,12 +14,12 @@
 --  at StringDiagrams.Draw.OutputDiagram.
 
 -- Example usage:
--- main = do
---   inputDiagram <- readInputDiagram "example.json"
---   case inputDiagram of
---     Left e -> putStrLn e
---     Right inp ->  mainWith $ 
---       (inp # inputToOutput :: OutputDiagram) # strokeOutput
+-- > main = do
+-- >  inputDiagram <- readInputDiagram "example.json"
+-- >  case inputDiagram of
+-- >    Left e -> putStrLn e
+-- >    Right inp ->  mainWith $ 
+-- >      (inp # inputToOutput :: OutputDiagram) # strokeOutput
 
 module StringDiagrams.Draw (
     arity, pinch,
@@ -74,7 +74,7 @@ class (Deformable a a, Enveloped a, AType a, Transformable a, Juxtaposable a, Se
     tensor :: a -> a -> a
     tensor od1 od2 = alignB $
         od1 # scaleX (mw/w1) # shearY ((a2#snd - a2#fst)/mw)
-        <> od2 # scaleX (mw/w2) # snugT
+        === od2 # scaleX (mw/w2)
         where [w1, w2] = [width od1, width od2]
               mw = max w1 w2
               a2 = od2 # arity
@@ -108,14 +108,14 @@ connectionPoints (al, ar) = (ptsl, ptsr)
 
 -- | Draws the wires of a morphism
 drawWires :: Arity -> Path V2 Double
-drawWires (al, ar) = toPath . map (flatCubic (0.5 ^& 0.5)) $ ptsl++ptsr
-    where (sptsl, sptsr) = connectionPoints (al, ar)
-          (ptsl, ptsr) = (sptsl # scaleY (1/al),sptsr # scaleY (1/ar))
+drawWires a@(al, ar) = toPath . map (flatCubic c) $ ptsl++ptsr
+    where (ptsl, ptsr) = connectionPoints a
+          c = 0.5 ^& (0.125 * (al + 1) * (ar + 1))
 
 -- | Draws the wires of a crossing
 drawCrossingWires :: [Int] -> Path V2 Double
-drawCrossingWires mf = toPath [flatCubic (0 ^& ((0.5+i) / k))
-    (1 ^& ((0.5 + fromIntegral (mf !! floor i)) / k)) | i <-[0..k-1]]
+drawCrossingWires mf = toPath [flatCubic (0 ^& (0.5+i))
+    (1 ^& (0.5 + fromIntegral (mf !! floor i))) | i <-[0..k-1]]
     where k = (fromIntegral . length) mf
 
 ------------------------------------------------------------

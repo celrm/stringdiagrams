@@ -2,6 +2,7 @@
 
 module StringDiagrams.Read (
     LeafType(..), NodeType(..), Arity, NamedArity,
+    leafArity,
     readInputDiagram, readInputDiagramWN
 ) where
 
@@ -24,6 +25,15 @@ data LeafType = Morphism Arity String
     | MorphismWNames NamedArity String
     | Crossing [Int]
     | CrossingWNames [String] [Int]
+
+leafArity :: LeafType -> Arity
+leafArity (Morphism (al, ar) _) = (al, ar)
+leafArity (MorphismWNames (als, ars) _) = 
+    ((fromIntegral . length) als, (fromIntegral . length) ars)
+leafArity (Crossing mf) = (k, k)
+    where k = (fromIntegral . length) mf
+leafArity (CrossingWNames _ mf) = (k, k)
+    where k = (fromIntegral . length) mf
 
 data NodeType = Leaf LeafType
     | Compose
@@ -52,25 +62,26 @@ instance FromJSON TupleDiagram where
       "Morphism" -> do
         arity <- v .: "arity"
         label <- v .: "label"
-        return $ TID (arity, Node (Leaf $ Morphism arity label) [])
+        let l = Morphism arity label
+        return $ TID (arity, Node (Leaf l) [])
       "MorphismWNames" -> do
         arityL <- v .: "arityL"
         arityR <- v .: "arityR"
         label <- v .: "label"
-        return $ TID ((fromIntegral . length $ arityL, fromIntegral . length $ arityR), 
-          Node (Leaf $ MorphismWNames (arityL,arityR) label) [])
+        let l = MorphismWNames (arityL, arityR) label
+        return $ TID (leafArity l, Node (Leaf l) [])
       "Crossing" -> do
         per <- v .: "permutation"
+        let l = Crossing per
         if isPerm per then 
-          return $ TID ((fromIntegral . length $ per, fromIntegral . length $ per), 
-          Node (Leaf $ Crossing per) [])
+          return $ TID (leafArity l, Node (Leaf l) [])
         else fail "Invalid InputDiagram Crossing"
       "CrossingWNames" -> do
         a <- v .: "arity"
         per <- v .: "permutation"
+        let l = CrossingWNames a per
         if isPerm per then 
-          return $ TID ((fromIntegral . length $ a, fromIntegral . length $ a), 
-            Node (Leaf $ CrossingWNames a per) [])
+          return $ TID (leafArity l, Node (Leaf l) [])
         else fail "Invalid InputDiagram Crossing"
       "Compose" -> do
         TID ((al1,ar1), t1) <- v .: "diagram1"

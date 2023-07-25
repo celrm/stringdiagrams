@@ -6,12 +6,20 @@ import System.Directory (listDirectory)
 import System.FilePath ((</>), replaceExtension, takeExtension)
 
 import Diagrams.Prelude
-import Diagrams.Backend.SVG (renderSVG)
+import Diagrams.Backend.SVG (renderSVG, SVG)
 
-import StringDiagrams.Read (readInputDiagram)
-import StringDiagrams.Draw.OutputDiagram (OutputDiagram, outputToStrings)
-import StringDiagrams.Draw (OutputClass(..), isoscelify, pinch, arity)
-import StringDiagrams.Draw.StringDiagram ()
+import StringDiagrams.Read (readInputDiagram, NodeType)
+import Data.Tree (Tree)
+import StringDiagrams.Draw (OutputClass(strokeOutput, inputToOutput))
+
+--------------------------------------------------------------------------------
+
+import StringDiagrams.Draw.BrickDiagram ()
+
+process :: Tree NodeType -> QDiagram SVG V2 Double Any
+process input = (input # inputToOutput :: Path V2 Double) # strokeOutput
+
+--------------------------------------------------------------------------------
 
 main :: IO ()
 main = do
@@ -33,18 +41,7 @@ processFile f = do
     case inputDiagram of
       Left e -> putStrLn e
       Right exmp ->
-        renderSVG
-          (replaceExtension f "svg")
-          (mkSizeSpec $ V2 (Just 400) (Just 400))
-          (d <> cornersPath # pinch (-al) # pinch ar # stroke)
-        where d = hsep 0.5 [z]
-              x = (exmp # inputToOutput :: OutputDiagram)
-                # strokeOutput
-              y = (exmp # inputToOutput :: Path V2 Double)
-                # strokeOutput
-              z = exmp # inputToOutput
-                # outputToStrings
-              (al,ar) = (exmp # inputToOutput :: OutputDiagram) # arity
-
-cornersPath :: Path V2 Double
-cornersPath = toPath [ FLinear (p2 p + 0.00001) (p2 p) | p <- [(0, 0), (0, 1), (1, 1), (1, 0)]]
+          renderSVG
+            (replaceExtension f "svg")
+            (mkSizeSpec $ V2 (Just 400) (Just 400))
+            (process exmp)

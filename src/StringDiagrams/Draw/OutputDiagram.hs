@@ -124,11 +124,11 @@ instance OutputClass OutputDiagram where
     strokeOutput = outputToStringDiagram
 
     drawLeaf (Morphism (al, ar) s) = OD
-        { _ps = Paths { _bd = unitSquare # alignBL, _sd = drawWires (al,ar) }
+        { _ps = Paths { _bd = unitSquare # alignBL, _sd = mempty }
         , _ls = Locs
             { _labels = [Loc ctr (text s # fontSizeG 0.25 # translateY (-0.0625))] -- TODO fit inside boxes
             , _boxes = [Loc ctr (square 0.3 # scaleY 1.5 # fc white)] } -- TODO clip instead
-        } # pinch (-al) # pinch ar
+        } # pinch (-al) # pinch ar # set (ps . sd) (drawWires (al,ar))
         where ctr = 0.5 ^& 0.5
     
     drawLeaf (MorphismWNames (als, ars) s) =
@@ -142,9 +142,9 @@ instance OutputClass OutputDiagram where
 
     drawLeaf (Crossing mf) = OD
         { _ps = Paths { _bd = unitSquare # alignBL
-        , _sd = drawCrossingWires mf }
+        , _sd = mempty }
         , _ls = Locs { _labels = [], _boxes = [] }
-        } # pinch (-k) # pinch k
+        } # pinch (-k) # pinch k # set (ps . sd) (drawCrossingWires mf)
         where k = (fromIntegral . length) mf
 
     drawLeaf (CrossingWNames ks mf) =

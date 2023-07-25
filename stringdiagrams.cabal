@@ -18,12 +18,11 @@ common shared-properties
     ghc-options:      -Wall
     default-language: Haskell2010
     build-depends:    
-        base,
-        --^>=4.16.4.0, 
-        diagrams-lib, 
+        base(>=4.8 && <4.19),
+        diagrams-lib(>=1.4 && <1.5),
         diagrams-svg,
         safe, aeson, bytestring, 
-        containers
+        containers(>0.4 && <0.7)
 
 library
     import:           shared-properties
@@ -32,7 +31,8 @@ library
         StringDiagrams.Read,
         StringDiagrams.Draw,
         StringDiagrams.Draw.BrickDiagram,
-        StringDiagrams.Draw.StringDiagram,
+        StringDiagrams.Draw.BrickWrapper,
+        StringDiagrams.Draw.WireDiagram,
         StringDiagrams.Draw.OutputDiagram,
 
 executable stringdiagrams
@@ -43,7 +43,8 @@ executable stringdiagrams
 
 test-suite stringdiagrams-test
     import:           shared-properties
-    build-depends:    stringdiagrams
+    build-depends:    stringdiagrams, directory, filepath
+
     hs-source-dirs:   test
     main-is:          Main.hs
     type:             exitcode-stdio-1.0

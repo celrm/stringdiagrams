@@ -1,8 +1,8 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
+{-# LANGUAGE FlexibleInstances         #-}
+{-# OPTIONS_GHC -Wno-orphans           #-}
 
 module StringDiagrams.Draw.BrickDiagram where
 

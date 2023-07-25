@@ -4,20 +4,32 @@ module Main (main) where
 
 import System.Directory (listDirectory)
 import System.FilePath ((</>), replaceExtension, takeExtension)
+import Data.Tree ( Tree )
 
 import Diagrams.Prelude
-import Diagrams.Backend.SVG (renderSVG, SVG)
+import Diagrams.Backend.SVG (renderSVG, B)
 
 import StringDiagrams.Read (readInputDiagram, NodeType)
-import Data.Tree (Tree)
 import StringDiagrams.Draw (OutputClass(strokeOutput, inputToOutput))
+
+import StringDiagrams.Draw.BrickDiagram ()
+import StringDiagrams.Draw.BrickWrapper (strokeBrick)
+import StringDiagrams.Draw.OutputDiagram (OutputDiagram , strokeWires)
+import StringDiagrams.Draw.WireDiagram (WireDiagram)
 
 --------------------------------------------------------------------------------
 
-import StringDiagrams.Draw.BrickDiagram ()
-
-process :: Tree NodeType -> QDiagram SVG V2 Double Any
-process input = (input # inputToOutput :: Path V2 Double) # strokeOutput
+process :: Tree NodeType -> QDiagram B V2 Double Any
+process input = vsep 0.5 [hsep 0.5 [bd1, bd2, bd3], hsep 0.5 [sd1, sd2, od]]
+  where path = input # inputToOutput :: Path V2 Double
+        wire = input # inputToOutput :: WireDiagram
+        outd = input # inputToOutput :: OutputDiagram
+        bd1 = path # strokeOutput
+        bd2 = wire # strokeBrick
+        bd3 = outd # strokeBrick
+        sd1 = wire # strokeOutput
+        sd2 = outd # strokeWires
+        od  = outd # strokeOutput
 
 --------------------------------------------------------------------------------
 

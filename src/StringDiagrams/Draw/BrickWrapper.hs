@@ -6,14 +6,13 @@
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE UndecidableInstances      #-}
 
-module StringDiagrams.Draw.BrickWrapper ( BrickWrapper, strokeBrick, deformPath, Drawable(..) ) where
+module StringDiagrams.Draw.BrickWrapper ( BrickWrapper, strokeBrick, deformPath, unwrap ) where
 
 import Diagrams.Prelude
 
 import StringDiagrams.Draw
-    ( OutputClass(..), pinch, flatCubic )
-import StringDiagrams.Read (leafArity, LeafType)
-import Diagrams.Backend.SVG (B)
+    ( OutputClass(..), pinch, flatCubic, Drawable (..) )
+import StringDiagrams.Read (leafArity)
 
 ------------------------------------------------------------
 --  BrickWrapper type  ------------------------------------
@@ -80,20 +79,15 @@ juxtaposeByTrace v a1 a2 =
 --  BrickWrapper is OutputClass ----------------------------
 ------------------------------------------------------------
 
-class Drawable a where
-    leaf :: LeafType -> a
-    strokeDrawing :: a -> Diagram B
-
-instance (OutputClass a) => Drawable a where
-    leaf = drawLeaf
-    strokeDrawing = strokeOutput
-
-instance (InSpace V2 Double a, Deformable a a, Semigroup a, Drawable a) => OutputClass (BrickWrapper a) where
+instance (Drawable a) => OutputClass (BrickWrapper a) where
     strokeOutput = strokeDrawing . (^.user)
 
     drawLeaf l = BW
         { _wrapper = unitSquare # alignBL # pinch (-al) # pinch ar,
-        _user = leaf l } where (al, ar) = leafArity l
+        _user = draw l } where (al, ar) = leafArity l
 
 strokeBrick :: Renderable (Path V2 Double) b => BrickWrapper a -> QDiagram b V2 Double Any
 strokeBrick = stroke . (^.wrapper)
+
+unwrap :: BrickWrapper a -> a
+unwrap = (^.user)

@@ -1,12 +1,8 @@
-{-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE MultiParamTypeClasses     #-}
-{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
+{-# LANGUAGE NoMonomorphismRestriction   #-}
+{-# LANGUAGE FlexibleContexts            #-}
+{-# LANGUAGE TypeFamilies                #-}
+{-# LANGUAGE ConstraintKinds             #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
-{-# OPTIONS_GHC -Wno-unused-top-binds #-}
-{-# LANGUAGE ConstraintKinds #-}
 
 -- | Module for drawing string diagrams
 --  The main typeclass is OutputClass, which is used to draw the diagrams
@@ -24,6 +20,7 @@
 module StringDiagrams.Draw (
     arity, pinch,
     OutputClass(..),
+    Drawable(..),
     rectangify, squarify, isoscelify,
     flatCubic,
     connectionPoints,
@@ -79,17 +76,21 @@ class (Deformable a a, Enveloped a, AType a, Transformable a, Juxtaposable a, Se
               mw = max w1 w2
               a2 = od2 # arity
 
-    drawLeaf :: LeafType -> a
+    inputToOutput :: Tree NodeType -> a
+    inputToOutput = foldTree drawNode
 
     drawNode :: NodeType -> [a] -> a
     drawNode (Leaf l) _ = drawLeaf l
     drawNode Compose [od1,od2] = compose od1 od2
     drawNode Tensor [od1,od2] = tensor od1 od2
 
-    inputToOutput :: Tree NodeType -> a
-    inputToOutput = foldTree drawNode
+    drawLeaf :: LeafType -> a
 
     strokeOutput :: a -> Diagram B
+
+class (InSpace V2 Double a, Deformable a a, Semigroup a) => Drawable a where
+    draw :: LeafType -> a
+    strokeDrawing :: a -> Diagram B
 
 ------------------------------------------------------------
 -- Drawing utilities  --------------------------------------

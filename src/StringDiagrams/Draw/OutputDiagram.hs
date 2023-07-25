@@ -1,12 +1,12 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE TemplateHaskell           #-}
+{-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE InstanceSigs              #-}
 
-module StringDiagrams.Draw.OutputDiagram ( OutputDiagram ) where
+module StringDiagrams.Draw.OutputDiagram ( OutputDiagram, strokeWires) where
 
 import Data.List ( nubBy )
 
@@ -16,9 +16,9 @@ import Diagrams.Backend.SVG ( B )
 import StringDiagrams.Draw
     ( connectionPoints,
       drawWires,
-      drawCrossingWires )
+      drawCrossingWires, Drawable (..) )
 import StringDiagrams.Read (LeafType(..))
-import StringDiagrams.Draw.BrickWrapper (Drawable (..), deformPath, BrickWrapper)
+import StringDiagrams.Draw.BrickWrapper (deformPath, BrickWrapper, unwrap)
 
 ------------------------------------------------------------
 --  Locatables type  ------------------------------------
@@ -33,7 +33,6 @@ $(makeLenses ''Locatables)
 
 type instance V Locatables = V2
 type instance N Locatables = Double
-
 instance Semigroup Locatables where
     (<>) od1 od2 = od1 # over sd (<> od2^.sd) # over ls (<> od2^.ls)
 
@@ -52,17 +51,17 @@ instance Drawable Locatables where
                     nubBy (\a b -> distance (loc a) (loc b) < 0.00001) (od^.ls)]
             ++ [od^.sd # strokePath]
 
-    leaf :: LeafType -> Locatables
-    leaf (Morphism (al, ar) s) = OD
+    draw :: LeafType -> Locatables
+    draw (Morphism (al, ar) s) = OD
         { _sd = drawWires (al,ar)
         , _ls = [ Loc c
             $ (text s # fontSizeG 0.25 # translateY (-0.0625)) -- TODO fit inside boxes
             <> (square 0.3 # scaleY 1.5 # fc white)] -- TODO clip instead
         } where c = 0.5 ^& (0.125 * (al + 1) * (ar + 1))
 
-    leaf (Crossing mf) = OD { _sd = drawCrossingWires mf , _ls = [] }
+    draw (Crossing mf) = OD { _sd = drawCrossingWires mf , _ls = [] }
     
-    leaf (MorphismWNames (als, ars) s) = OD
+    draw (MorphismWNames (als, ars) s) = OD
         { _sd = drawWires (al,ar)
         , _ls = [ Loc c
             $ (text s # fontSizeG 0.25 # translateY (-0.0625)) -- TODO fit inside boxes
@@ -75,7 +74,7 @@ instance Drawable Locatables where
               wireNames = funct ptsl als ++ funct ptsr ars
               -- they get drawn twice
               
-    leaf (CrossingWNames ks mf) = OD 
+    draw (CrossingWNames ks mf) = OD 
         { _sd = drawCrossingWires mf 
         , _ls = wireNames }
         where k = (fromIntegral . length) mf
@@ -84,3 +83,6 @@ instance Drawable Locatables where
               wireNames = funct ptsl ks ++ funct ptsr (map (ks !!) mf)
 
 type OutputDiagram = BrickWrapper Locatables
+
+strokeWires :: Renderable (Path V2 Double) b => OutputDiagram -> QDiagram b V2 Double Any
+strokeWires = stroke . (^.sd) . unwrap

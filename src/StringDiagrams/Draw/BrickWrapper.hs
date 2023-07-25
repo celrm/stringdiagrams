@@ -4,21 +4,16 @@
 {-# LANGUAGE TemplateHaskell           #-}
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
-{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE InstanceSigs #-}
-{-# OPTIONS_GHC -Wno-unused-top-binds #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE UndecidableInstances      #-}
 
-module StringDiagrams.Draw.BrickWrapper ( BrickWrapper, strokeBrick, deformPath ) where
+module StringDiagrams.Draw.BrickWrapper ( BrickWrapper, strokeBrick, deformPath, Drawable(..) ) where
 
 import Diagrams.Prelude
 
 import StringDiagrams.Draw
     ( OutputClass(..), pinch, flatCubic )
-import StringDiagrams.Read (leafArity)
+import StringDiagrams.Read (leafArity, LeafType)
+import Diagrams.Backend.SVG (B)
 
 ------------------------------------------------------------
 --  BrickWrapper type  ------------------------------------
@@ -82,15 +77,23 @@ juxtaposeByTrace v a1 a2 =
         mv2 = maxTraceV origin (negated v) a2
 
 ------------------------------------------------------------
---  BrickWrapper is OutputClass ---------------------------
+--  BrickWrapper is OutputClass ----------------------------
 ------------------------------------------------------------
 
-instance (OutputClass a) => OutputClass (BrickWrapper a) where
-    strokeOutput = strokeOutput . (^.user)
+class Drawable a where
+    leaf :: LeafType -> a
+    strokeDrawing :: a -> Diagram B
+
+instance (OutputClass a) => Drawable a where
+    leaf = drawLeaf
+    strokeDrawing = strokeOutput
+
+instance (InSpace V2 Double a, Deformable a a, Semigroup a, Drawable a) => OutputClass (BrickWrapper a) where
+    strokeOutput = strokeDrawing . (^.user)
 
     drawLeaf l = BW
         { _wrapper = unitSquare # alignBL # pinch (-al) # pinch ar,
-        _user = drawLeaf l } where (al, ar) = leafArity l
+        _user = leaf l } where (al, ar) = leafArity l
 
 strokeBrick :: Renderable (Path V2 Double) b => BrickWrapper a -> QDiagram b V2 Double Any
 strokeBrick = stroke . (^.wrapper)

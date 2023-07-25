@@ -58,7 +58,7 @@ pinch h od = od # deform (Deformation $ \pt ->
 
 ------------------------------------------------------------
 --  OutputClass typeclass  ---------------------------------
-------------------------------------------------------------          
+------------------------------------------------------------
 
 -- | Typeclass for output diagrams
 --   Minimal complete definition: drawLeaf, strokeOutput

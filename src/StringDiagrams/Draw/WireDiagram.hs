@@ -2,11 +2,7 @@
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE MultiParamTypeClasses     #-}
-{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
-{-# OPTIONS_GHC -Wno-unused-top-binds #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
+{-# OPTIONS_GHC -Wno-orphans           #-}
 
 module StringDiagrams.Draw.WireDiagram (WireDiagram) where
 

@@ -18,7 +18,7 @@ import StringDiagrams.Draw
       drawWires,
       drawCrossingWires, Drawable (..) )
 import StringDiagrams.Read (LeafType(..))
-import StringDiagrams.Draw.BrickWrapper (deformPath, BrickWrapper, unwrap)
+import StringDiagrams.BrickWrapper (deformPath, BrickWrapper, unwrap)
 
 ------------------------------------------------------------
 --  Locatables type  ------------------------------------

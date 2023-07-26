@@ -6,7 +6,7 @@
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE UndecidableInstances      #-}
 
-module StringDiagrams.Draw.BrickWrapper ( BrickWrapper, strokeBrick, deformPath, unwrap ) where
+module StringDiagrams.BrickWrapper ( BrickWrapper, strokeBrick, deformPath, unwrap ) where
 
 import Diagrams.Prelude
 
@@ -82,7 +82,7 @@ juxtaposeByTrace v a1 a2 =
 instance (Drawable a) => OutputClass (BrickWrapper a) where
     strokeOutput = strokeDrawing . (^.user)
 
-    drawLeaf l = BW
+    leaf l = BW
         { _wrapper = unitSquare # alignBL # pinch (-al) # pinch ar,
         _user = draw l } where (al, ar) = leafArity l
 

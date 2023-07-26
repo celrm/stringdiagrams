@@ -1,8 +1,9 @@
-{-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE FlexibleInstances         #-}
-{-# OPTIONS_GHC -Wno-orphans           #-}
+{-# LANGUAGE NoMonomorphismRestriction    #-}
+{-# LANGUAGE FlexibleContexts             #-}
+{-# LANGUAGE TypeFamilies                 #-}
+{-# LANGUAGE FlexibleInstances            #-}
+{-# OPTIONS_GHC -Wno-orphans              #-}
+{-# OPTIONS_GHC -Wincomplete-uni-patterns #-}
 
 module StringDiagrams.Draw.BrickDiagram where
 
@@ -12,9 +13,9 @@ import StringDiagrams.Read (LeafType(..), leafArity)
 
 instance OutputClass (Path V2 Double) where
     strokeOutput = strokePath
-    drawLeaf (Morphism (al, ar) _) = 
+    leaf (Morphism (al, ar) _) = 
         unitSquare # alignBL # pinch (-al) # pinch ar
-    drawLeaf l = drawLeaf $ Morphism (leafArity l) ""
+    leaf l = leaf $ Morphism (leafArity l) ""
 
     tensor od1 od2 = alignB $
         od1 # scaleX (mw/w1) # shearY ((a2#snd - a2#fst)/mw)

@@ -1,8 +1,9 @@
-{-# LANGUAGE NoMonomorphismRestriction   #-}
-{-# LANGUAGE FlexibleContexts            #-}
-{-# LANGUAGE TypeFamilies                #-}
-{-# LANGUAGE ConstraintKinds             #-}
-{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# LANGUAGE NoMonomorphismRestriction    #-}
+{-# LANGUAGE FlexibleContexts             #-}
+{-# LANGUAGE TypeFamilies                 #-}
+{-# LANGUAGE ConstraintKinds              #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns  #-}
+{-# OPTIONS_GHC -Wincomplete-uni-patterns #-}
 
 -- | Module for drawing string diagrams
 --  The main typeclass is OutputClass, which is used to draw the diagrams
@@ -21,6 +22,7 @@ module StringDiagrams.Draw (
     arity, pinch,
     OutputClass(..),
     Drawable(..),
+    inputToOutput,
     rectangify, squarify, isoscelify,
     flatCubic,
     connectionPoints,
@@ -42,50 +44,47 @@ type AType a=(InSpace V2 Double a, Traced a, Alignable a, HasOrigin a)
 
 -- | Finds the diagram's arity (height of each side)
 arity :: AType a => a -> (N a, N a)
-arity od = (od # findHeight, od # alignR # findHeight)
+arity d = (d # findHeight, d # alignR # findHeight)
     where findHeight = maybe 0 (^._y) . maxRayTraceP origin unitY
 
 -- | Deformation that moves a quadrilateral's upper vertex to |k| (k<0 => left, k>0 => right)
 pinch :: (Deformable a a, Enveloped a, AType a) => N a -> a -> a
-pinch h od = od # deform (Deformation $ \pt ->
+pinch h d = d # deform (Deformation $ \pt ->
     pt # scaleY (fxb pt / fx a pt))
-    where a@(al, ar) = od # arity
-          fx (l, r) pt =  pt^._x * (r - l) / (od # width) + l
+    where a@(al, ar) = d # arity
+          fx (l, r) pt =  pt^._x * (r - l) / (d # width) + l
           fxb = if h < 0 then fx (-h, ar) else fx (al, h)
 
 ------------------------------------------------------------
 --  OutputClass typeclass  ---------------------------------
 ------------------------------------------------------------
 
+inputToOutput :: OutputClass a => Tree NodeType -> a
+inputToOutput = foldTree drawNode
+    where drawNode (Leaf l) _ = leaf l
+          drawNode Compose [d1,d2] = compose d1 d2
+          drawNode Tensor [d1,d2] = tensor d1 d2
+
 -- | Typeclass for output diagrams
---   Minimal complete definition: drawLeaf, strokeOutput
---   Default definitions: compose, tensor, drawNode, inputToOutput (should not be overriden)
-class (Deformable a a, Enveloped a, AType a, Transformable a, Juxtaposable a, Semigroup a)
-    => OutputClass a where
+--   Minimal complete definition: leaf, strokeOutput
+--   Default definitions: compose, tensor (should not be overriden usually)
+class (Deformable a a, Enveloped a, AType a, Transformable a, 
+    Juxtaposable a, Semigroup a) => OutputClass a where
     compose :: a -> a -> a
-    compose od1 od2 = od1 # pinch middle ||| od2 # pinch (-middle)
-        where [w1, w2] = [width od1, width od2]
-              [l_1, r_2] = [od1 # arity # fst, od2 # arity # snd]
-              middle = (w1*r_2 + w2*l_1)/(w1 + w2)
+    compose d1 d2 = d1 # t1 ||| d2 # t2
+        where [w1, w2] = [width d1, width d2]
+              [h1, h2] = [d1 # arity # fst, d2 # arity # snd]
+              middle = (w1*h2 + w2*h1)/(w1 + w2)
+              (t1, t2) = (pinch middle, pinch (-middle))
 
     tensor :: a -> a -> a
-    tensor od1 od2 = alignB $
-        od1 # scaleX (mw/w1) # shearY ((a2#snd - a2#fst)/mw)
-        === od2 # scaleX (mw/w2)
-        where [w1, w2] = [width od1, width od2]
+    tensor d1 d2 = alignB $ d1 # t1 === d2 # t2
+        where [w1, w2] = [width d1, width d2]
               mw = max w1 w2
-              a2 = od2 # arity
+              sh = (d2 # arity # snd - d2 # arity # fst)/mw
+              (t1, t2) = (shearY sh . scaleX (mw/w1), scaleX (mw/w2))
 
-    inputToOutput :: Tree NodeType -> a
-    inputToOutput = foldTree drawNode
-
-    drawNode :: NodeType -> [a] -> a
-    drawNode (Leaf l) _ = drawLeaf l
-    drawNode Compose [od1,od2] = compose od1 od2
-    drawNode Tensor [od1,od2] = tensor od1 od2
-
-    drawLeaf :: LeafType -> a
-
+    leaf :: LeafType -> a
     strokeOutput :: a -> Diagram B
 
 class (InSpace V2 Double a, Deformable a a, Semigroup a) => Drawable a where
@@ -125,21 +124,21 @@ drawCrossingWires mf = toPath [flatCubic (0 ^& (0.5+i))
 
 -- | Deformation that makes a diagram rectangular
 rectangify :: (Deformable a a, Enveloped a, AType a) => a -> a
-rectangify od = od
+rectangify d = d
     # pinch (-maxArity)
     # pinch maxArity
-    where (al,ar) = od # arity
+    where (al,ar) = d # arity
           maxArity = max al ar
 
 -- | Deformation that makes a diagram square
 squarify :: (Deformable a a, Enveloped a, AType a, Transformable a) => a -> a
-squarify od = od
+squarify d = d
     # rectangify
-    # scaleX (maxArity/(od # width))
-    where (al,ar) = od # arity
+    # scaleX (maxArity/(d # width))
+    where (al,ar) = d # arity
           maxArity = max al ar
 
 -- | Deformation that makes a diagram an isosceles trapezoid
 isoscelify :: (Enveloped a, AType a, Transformable a) => a -> a
-isoscelify od = od
-    # shearY ((od # arity # fst - od # arity # snd)/(2*(od # width)))
+isoscelify d = d
+    # shearY ((d # arity # fst - d # arity # snd)/(2*(d # width)))

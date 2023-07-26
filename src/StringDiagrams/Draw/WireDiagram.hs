@@ -11,7 +11,7 @@ import Diagrams.Prelude
 import StringDiagrams.Draw
     ( drawWires, drawCrossingWires, Drawable (..) )
 import StringDiagrams.Read (LeafType(..), leafArity)
-import StringDiagrams.Draw.BrickWrapper (BrickWrapper)
+import StringDiagrams.BrickWrapper (BrickWrapper)
 
 ------------------------------------------------------------
 --  Drawing (hiding the implementation)  -------------------

@@ -10,12 +10,12 @@ import Diagrams.Prelude
 import Diagrams.Backend.SVG (renderSVG, B)
 
 import StringDiagrams.Read (readInputDiagram, NodeType)
-import StringDiagrams.Draw (OutputClass(strokeOutput, inputToOutput))
+import StringDiagrams.Draw (OutputClass(strokeOutput), inputToOutput)
 
 import StringDiagrams.Draw.BrickDiagram ()
-import StringDiagrams.Draw.BrickWrapper (strokeBrick)
 import StringDiagrams.Draw.OutputDiagram (OutputDiagram , strokeWires)
 import StringDiagrams.Draw.WireDiagram (WireDiagram)
+import StringDiagrams.BrickWrapper (strokeBrick)
 
 --------------------------------------------------------------------------------
 
@@ -24,12 +24,12 @@ process input = vsep 0.5 [hsep 0.5 [bd1, bd2, bd3], hsep 0.5 [sd1, sd2, od]]
   where path = input # inputToOutput :: Path V2 Double
         wire = input # inputToOutput :: WireDiagram
         outd = input # inputToOutput :: OutputDiagram
-        bd1 = path # strokeOutput
-        bd2 = wire # strokeBrick
-        bd3 = outd # strokeBrick
-        sd1 = wire # strokeOutput
-        sd2 = outd # strokeWires
-        od  = outd # strokeOutput
+        bd1 = path # strokeOutput -- "Path as OClass"
+        bd2 = wire # strokeBrick -- "Brick of WD"
+        bd3 = outd # strokeBrick -- "Brick of OD"
+        sd1 = wire # strokeOutput -- "WD: Brick Path"
+        sd2 = outd # strokeWires -- "Wires of OD"
+        od  = outd # strokeOutput -- "OD: Brick LS"
 
 --------------------------------------------------------------------------------
 

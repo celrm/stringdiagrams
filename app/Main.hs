@@ -4,8 +4,8 @@ import Diagrams.Prelude
 import Diagrams.Backend.SVG.CmdLine ( mainWith, B )
 
 import StringDiagrams.Read (readInputDiagram)
-import StringDiagrams.Draw (OutputClass(..))
-import StringDiagrams.Draw.BrickWrapper (strokeBrick)
+import StringDiagrams.Draw (inputToOutput)
+import StringDiagrams.BrickWrapper (strokeBrick)
 import StringDiagrams.Draw.OutputDiagram (OutputDiagram)
 
 main :: IO ()

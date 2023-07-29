@@ -4,7 +4,7 @@
 {-# LANGUAGE FlexibleInstances         #-}
 {-# OPTIONS_GHC -Wno-orphans           #-}
 
-module StringDiagrams.Draw.WireDiagram (WireDiagram) where
+module StringDiagrams.Draw.WiresDiagram (WiresDiagram) where
 
 import Diagrams.Prelude
 
@@ -27,4 +27,4 @@ instance Drawable (Path V2 Double) where
     draw (CrossingWNames _ mf) = 
         draw $ Crossing mf
 
-type WireDiagram = BrickWrapper (Path V2 Double)
+type WiresDiagram = BrickWrapper (Path V2 Double)

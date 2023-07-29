@@ -11,11 +11,11 @@ module StringDiagrams.BrickWrapper ( BrickWrapper, strokeBrick, deformPath, unwr
 import Diagrams.Prelude
 
 import StringDiagrams.Draw
-    ( OutputClass(..), pinch, flatCubic, Drawable (..) )
+    ( FoldableDiagram(..), pinch, flatCubic, Drawable (..) )
 import StringDiagrams.Read (leafArity)
 
 ------------------------------------------------------------
---  BrickWrapper type  ------------------------------------
+--  BrickWrapper type  -------------------------------------
 ------------------------------------------------------------
 
 data BrickWrapper a = BW { _wrapper :: Path V2 Double, _user :: a }
@@ -76,10 +76,10 @@ juxtaposeByTrace v a1 a2 =
         mv2 = maxTraceV origin (negated v) a2
 
 ------------------------------------------------------------
---  BrickWrapper is OutputClass ----------------------------
+--  BrickWrapper is FoldableDiagram ----------------------------
 ------------------------------------------------------------
 
-instance (Drawable a) => OutputClass (BrickWrapper a) where
+instance (Drawable a) => FoldableDiagram (BrickWrapper a) where
     strokeOutput = strokeDrawing . (^.user)
 
     leaf l = BW

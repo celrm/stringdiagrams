@@ -31,9 +31,9 @@ library
         StringDiagrams.Read,
         StringDiagrams.Draw,
         StringDiagrams.BrickWrapper,
-        StringDiagrams.Draw.BrickDiagram,
-        StringDiagrams.Draw.WireDiagram,
-        StringDiagrams.Draw.OutputDiagram,
+        StringDiagrams.Draw.NaiveDiagram,
+        StringDiagrams.Draw.WiresDiagram,
+        StringDiagrams.Draw.LabelsDiagram,
 
 executable stringdiagrams
     import:           shared-properties

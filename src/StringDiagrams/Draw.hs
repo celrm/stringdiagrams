@@ -6,9 +6,9 @@
 {-# OPTIONS_GHC -Wincomplete-uni-patterns #-}
 
 -- | Module for drawing string diagrams
---  The main typeclass is OutputClass, which is used to draw the diagrams
---  but has to be instantiated. A default instance OutputDiagram is provided
---  at StringDiagrams.Draw.OutputDiagram.
+--  The main typeclass is FoldableDiagram, which is used to draw the diagrams
+--  but has to be instantiated. A default instance LabelsDiagram is provided
+--  at StringDiagrams.Draw.LabelsDiagram.
 
 -- Example usage:
 -- > main = do
@@ -16,11 +16,11 @@
 -- >  case inputDiagram of
 -- >    Left e -> putStrLn e
 -- >    Right inp ->  mainWith $ 
--- >      (inp # inputToOutput :: OutputDiagram) # strokeOutput
+-- >      (inp # inputToOutput :: LabelsDiagram) # strokeOutput
 
 module StringDiagrams.Draw (
     arity, pinch,
-    OutputClass(..),
+    FoldableDiagram(..),
     Drawable(..),
     inputToOutput,
     rectangify, squarify, isoscelify,
@@ -56,10 +56,10 @@ pinch h d = d # deform (Deformation $ \pt ->
           fxb = if h < 0 then fx (-h, ar) else fx (al, h)
 
 ------------------------------------------------------------
---  OutputClass typeclass  ---------------------------------
+--  FoldableDiagram typeclass  ---------------------------------
 ------------------------------------------------------------
 
-inputToOutput :: OutputClass a => Tree NodeType -> a
+inputToOutput :: FoldableDiagram a => Tree NodeType -> a
 inputToOutput = foldTree drawNode
     where drawNode (Leaf l) _ = leaf l
           drawNode Compose [d1,d2] = compose d1 d2
@@ -69,7 +69,7 @@ inputToOutput = foldTree drawNode
 --   Minimal complete definition: leaf, strokeOutput
 --   Default definitions: compose, tensor (should not be overriden usually)
 class (Deformable a a, Enveloped a, AType a, Transformable a, 
-    Juxtaposable a, Semigroup a) => OutputClass a where
+    Juxtaposable a, Semigroup a) => FoldableDiagram a where
     compose :: a -> a -> a
     compose d1 d2 = d1 # t1 ||| d2 # t2
         where [w1, w2] = [width d1, width d2]

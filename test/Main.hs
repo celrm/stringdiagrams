@@ -11,6 +11,7 @@ import Diagrams.Backend.SVG (renderSVG, B)
 import StringDiagrams
 import StringDiagrams.Draw.NaiveDiagram ()
 import StringDiagrams.Draw.WiresDiagram (WiresDiagram)
+import StringDiagrams.Draw.LabelsDiagram (LabelsDiagram, strokeWires)
 
 --------------------------------------------------------------------------------
 

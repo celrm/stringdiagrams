@@ -8,13 +8,19 @@
 {-# OPTIONS_GHC -Wno-orphans           #-}
 {-# LANGUAGE InstanceSigs #-}
 
-module StringDiagrams.MonCatDiagram ( MonCatDiagram, getCat, getDrawing, getBrick ) where
+module StringDiagrams.MonCatWrapper ( MonCatWrapper, getSemantics, getDrawing, getWrapper, Drawable(..), Compilable(..) ) where
 
 import Diagrams.Prelude
 
 import StringDiagrams.Draw
-    ( FoldableDiagram(..), pinch, tensorOps, composeOps, Drawable (..), Compilable (..) )
-import StringDiagrams.Read (leafArity)
+    ( FoldableDiagram(..), pinch, tensorOps, composeOps )
+import StringDiagrams.Read (leafArity, LeafType)
+import StringDiagrams.BrickWrapper (Drawable (..))
+
+class Compilable a where
+    baseCase :: LeafType -> a
+    tensorOp :: a -> a -> a
+    composeOp :: a -> a -> a
 
 type instance N () = Double
 type instance V () = V2
@@ -24,42 +30,42 @@ instance Compilable () where
     baseCase _ = (); tensorOp _ _ = (); composeOp _ _ = ()
 
 ------------------------------------------------------------
---  (MonCatDiagram a b) type  ------------------------------
+--  (MonCatWrapper a b) type  ------------------------------
 ------------------------------------------------------------
 
-data MonCatDiagram a b = MD { _wrapper :: Path V2 Double, _drawing :: a, _category :: b }
-$(makeLenses ''MonCatDiagram)
+data MonCatWrapper a b = MD { _wrapper :: Path V2 Double, _drawing :: a, _semantics :: b }
+$(makeLenses ''MonCatWrapper)
 
-type instance V (MonCatDiagram a b) = V2
-type instance N (MonCatDiagram a b) = Double
+type instance V (MonCatWrapper a b) = V2
+type instance N (MonCatWrapper a b) = Double
 
-instance (Semigroup a) => Semigroup (MonCatDiagram a b) where
-    (<>) od1 od2 = od1 # over wrapper (<> od2^.wrapper) # over drawing (<> od2^.drawing)
+instance (Semigroup a) => Semigroup (MonCatWrapper a b) where
+    (<>) od1 od2 = MD (od1^.wrapper <> od2^.wrapper) (od1^.drawing <> od2^.drawing) (od1^.semantics)
 
-instance (InSpace V2 Double a, Deformable a a, r ~ MonCatDiagram a b) => Deformable (MonCatDiagram a b) r where
+instance (InSpace V2 Double a, Deformable a a, r ~ MonCatWrapper a b) => Deformable (MonCatWrapper a b) r where
     deform' e t = over wrapper (deform' e t) . over drawing (deform' e t)
     deform t = over wrapper (deform' 0.0001 t) . over drawing (deform' 0.0001 t)
 
 ------------------------------------------------------------
---  (MonCatDiagram a b) instances --------------------------
+--  (MonCatWrapper a b) instances --------------------------
 ------------------------------------------------------------
 
-instance (InSpace V2 Double a, Deformable a a) => Transformable (MonCatDiagram a b) where
+instance (InSpace V2 Double a, Deformable a a) => Transformable (MonCatWrapper a b) where
     transform = deform . asDeformation
 
-instance (InSpace V2 Double a, Deformable a a) => HasOrigin (MonCatDiagram a b) where
+instance (InSpace V2 Double a, Deformable a a) => HasOrigin (MonCatWrapper a b) where
     moveOriginTo p = deform (Deformation $ moveOriginTo p)
 
-instance Alignable (MonCatDiagram a b) where
+instance Alignable (MonCatWrapper a b) where
     defaultBoundary v = defaultBoundary v . (^.wrapper)
 
-instance Traced (MonCatDiagram a b) where
+instance Traced (MonCatWrapper a b) where
     getTrace = getTrace . (^.wrapper)
 
-instance Enveloped (MonCatDiagram a b) where
+instance Enveloped (MonCatWrapper a b) where
     getEnvelope = getEnvelope . (^.wrapper)
 
-instance (InSpace V2 Double a, Deformable a a) => Juxtaposable (MonCatDiagram a b) where
+instance (InSpace V2 Double a, Deformable a a) => Juxtaposable (MonCatWrapper a b) where
     juxtapose = juxtaposeByTrace
 
 -- from Diagrams.Core.Juxtapose.juxtaposeDefault (slightly changed)
@@ -72,28 +78,29 @@ juxtaposeByTrace v a1 a2 =
         mv2 = maxTraceV origin (negated v) a2
 
 ------------------------------------------------------------
---  (MonCatDiagram a b) is FoldableDiagram -----------------
+--  (MonCatWrapper a b) is FoldableDiagram -----------------
 ------------------------------------------------------------    
 
-instance (Drawable a, Compilable b) => FoldableDiagram (MonCatDiagram a b) where
+instance (Drawable a, Compilable b)
+    => FoldableDiagram (MonCatWrapper a b) where
     strokeOutput d = strokeDrawing (d^.drawing)
 
     leaf l = MD (unitSquare # alignBL # pinch (-al) # pinch ar) 
         (draw l) (baseCase l) where (al, ar) = leafArity l
 
     tensor d1 d2 =  (d1 # t1 === d2 # t2) # alignB
-        # set category (tensorOp (d1^.category) (d2^.category))
+        # set semantics (tensorOp (d1^.semantics) (d2^.semantics))
         where (t1, t2) = tensorOps d1 d2
     
     compose d1 d2 =  (d1 # t1 ||| d2 # t2)
-        # set category (composeOp (d1^.category) (d2^.category))
+        # set semantics (composeOp (d1^.semantics) (d2^.semantics))
         where (t1, t2) = composeOps d1 d2
 
-getCat :: MonCatDiagram a b -> b
-getCat = view category
+getSemantics :: MonCatWrapper a b -> b
+getSemantics = view semantics
 
-getDrawing :: MonCatDiagram a b -> a
+getDrawing :: MonCatWrapper a b -> a
 getDrawing = view drawing
 
-getBrick :: MonCatDiagram a b -> Path V2 Double
-getBrick = view wrapper
+getWrapper :: MonCatWrapper a b -> Path V2 Double
+getWrapper = view wrapper

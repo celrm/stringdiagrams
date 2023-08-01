@@ -8,9 +8,8 @@
 
 module StringDiagrams.Draw.MatrixDiagram (MatrixDiagram) where
 
-import StringDiagrams.Draw (Compilable (..), Drawable (..))
 import StringDiagrams.Read (LeafType (..), leafArity)
-import StringDiagrams.MonCatDiagram (MonCatDiagram)
+import StringDiagrams.MonCatWrapper (MonCatWrapper, Drawable (..), Compilable (..))
 
 import Data.Matrix (Matrix (nrows, ncols), fromLists, matrix, joinBlocks, zero)
 
@@ -62,7 +61,7 @@ instance Compilable (Matrix Double) where
     composeOp = (*)
 
 ------------------------------------------------------------
---  MatrixDiagram is MonCatDiagram -------------------------
+--  MatrixDiagram is MonCatWrapper -------------------------
 ------------------------------------------------------------
 
-type MatrixDiagram = MonCatDiagram Labels (Matrix Double)
+type MatrixDiagram = MonCatWrapper Labels (Matrix Double)

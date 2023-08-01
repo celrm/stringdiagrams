@@ -7,6 +7,7 @@
 {-# LANGUAGE UndecidableInstances      #-}
 
 module StringDiagrams.BrickWrapper ( 
+    Drawable (..),
     BrickWrapper, 
     strokeBrick, 
     unwrap ) where
@@ -14,8 +15,13 @@ module StringDiagrams.BrickWrapper (
 import Diagrams.Prelude
 
 import StringDiagrams.Draw
-    ( FoldableDiagram(..), pinch, Drawable (..) )
-import StringDiagrams.Read (leafArity)
+    ( FoldableDiagram(..), pinch )
+import StringDiagrams.Read (leafArity, LeafType)
+import Diagrams.Backend.SVG (B)
+
+class (InSpace V2 Double a, Deformable a a, Semigroup a) => Drawable a where
+    draw :: LeafType -> a
+    strokeDrawing :: a -> Diagram B
 
 ------------------------------------------------------------
 --  BrickWrapper type  -------------------------------------
@@ -28,7 +34,7 @@ type instance V (BrickWrapper a) = V2
 type instance N (BrickWrapper a) = Double
 
 instance (Semigroup a) => Semigroup (BrickWrapper a) where
-    (<>) od1 od2 = od1 # over wrapper (<> od2^.wrapper) # over user (<> od2^.user)
+    (<>) od1 od2 = BW (od1^.wrapper <> od2^.wrapper) (od1^.user <> od2^.user)
 
 instance (InSpace V2 Double a, Deformable a a, r ~ BrickWrapper a) => Deformable (BrickWrapper a) r where
     deform' e t = over wrapper (deform' e t) . over user (deform' e t)
@@ -71,8 +77,8 @@ juxtaposeByTrace v a1 a2 =
 
 instance (Drawable a) => FoldableDiagram (BrickWrapper a) where
     strokeOutput = strokeDrawing . (^.user)
-    leaf l = let (al, ar) = leafArity l in BW { _user = draw l, 
-        _wrapper = unitSquare # alignBL # pinch (-al) # pinch ar }
+    leaf l = let (al, ar) = leafArity l in
+        BW (unitSquare # alignBL # pinch (-al) # pinch ar) (draw l)
 
 strokeBrick :: Renderable (Path V2 Double) b => BrickWrapper a -> QDiagram b V2 Double Any
 strokeBrick = stroke . (^.wrapper)

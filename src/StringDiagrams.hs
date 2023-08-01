@@ -1,20 +1,11 @@
 module StringDiagrams (
     readInputDiagram, readInputDiagramWN, leafArity,
-    LeafType, NodeType, Tree, FoldableDiagram, Drawable,
+    LeafType, NodeType, Tree, FoldableDiagram, Drawable, Compilable,
     inputToOutput, strokeOutput, 
     pinch, rectangify, squarify, isoscelify,
     BrickWrapper, strokeBrick, unwrap, 
-    LabelsDiagram, strokeWires,
-    MonCatDiagram, getCat, getDrawing, getBrick,
+    MonCatWrapper, getSemantics, getDrawing, getWrapper,
 ) where
-
-import StringDiagrams.Read (LeafType, NodeType, leafArity, readInputDiagram, readInputDiagramWN)
-import Data.Tree (Tree)
-import StringDiagrams.Draw (FoldableDiagram(strokeOutput), inputToOutput, pinch, Drawable, rectangify, squarify, isoscelify)
-
-import StringDiagrams.Draw.LabelsDiagram (LabelsDiagram , strokeWires)
-import StringDiagrams.BrickWrapper (strokeBrick, BrickWrapper, unwrap)
-import StringDiagrams.MonCatDiagram (MonCatDiagram, getCat, getDrawing, getBrick)
 
 -- | Library for drawing string diagrams from JSON.
 --  The main typeclass is FoldableDiagram, which has to be instantiated. 
@@ -28,3 +19,10 @@ import StringDiagrams.MonCatDiagram (MonCatDiagram, getCat, getDrawing, getBrick
 -- >    Left e -> putStrLn e
 -- >    Right inp ->  mainWith $ 
 -- >      (inp # inputToOutput :: LabelsDiagram) # strokeOutput
+
+import Data.Tree (Tree)
+import StringDiagrams.Read (LeafType, NodeType, leafArity, readInputDiagram, readInputDiagramWN)
+import StringDiagrams.Draw (FoldableDiagram(strokeOutput), inputToOutput, pinch, rectangify, squarify, isoscelify)
+
+import StringDiagrams.BrickWrapper (BrickWrapper, Drawable, unwrap, strokeBrick)
+import StringDiagrams.MonCatWrapper (MonCatWrapper, Compilable, getSemantics, getDrawing, getWrapper)

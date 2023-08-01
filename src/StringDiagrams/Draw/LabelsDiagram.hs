@@ -14,10 +14,9 @@ import Diagrams.Prelude
 import Diagrams.Backend.SVG ( B )
 
 import StringDiagrams.Draw
-    ( connectionPoints, drawWires, drawCrossingWires,
-    Drawable (..), flatCubic )
+    ( connectionPoints, drawWires, drawCrossingWires, flatCubic )
 import StringDiagrams.Read (LeafType(..))
-import StringDiagrams.BrickWrapper (BrickWrapper, unwrap)
+import StringDiagrams.BrickWrapper ( Drawable (..),BrickWrapper, unwrap)
 
 ------------------------------------------------------------
 --  UserDiagram type  ------------------------------------

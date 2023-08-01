@@ -8,7 +8,6 @@
 module StringDiagrams.Draw (
     arity, pinch,
     FoldableDiagram(..),
-    Drawable(..), Compilable(..),
     inputToOutput,
     rectangify, squarify, isoscelify,
     flatCubic,
@@ -78,15 +77,6 @@ class (Deformable a a, Enveloped a, AType a, Transformable a,
 
     leaf :: LeafType -> a
     strokeOutput :: a -> Diagram B
-
-class (InSpace V2 Double a, Deformable a a, Semigroup a) => Drawable a where
-    draw :: LeafType -> a
-    strokeDrawing :: a -> Diagram B
-
-class Compilable a where
-    baseCase :: LeafType -> a
-    tensorOp :: a -> a -> a
-    composeOp :: a -> a -> a
 
 ------------------------------------------------------------
 -- Drawing utilities  --------------------------------------

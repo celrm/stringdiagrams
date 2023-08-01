@@ -9,6 +9,7 @@ import StringDiagrams
 
 import StringDiagrams.Draw.NaiveDiagram ()
 import StringDiagrams.Draw.WiresDiagram (WiresDiagram)
+import StringDiagrams.Draw.LabelsDiagram (LabelsDiagram, strokeWires)
 import StringDiagrams.Draw.MatrixDiagram (MatrixDiagram)
 import Data.Matrix (prettyMatrix)
 
@@ -36,11 +37,11 @@ processMat f s = do
       Left e -> putStrLn e
       Right exmp -> do
           let mat = exmp # inputToOutput :: MatrixDiagram
-          putStr $ prettyMatrix $ getCat mat
+          putStr $ prettyMatrix $ getSemantics mat
           renderSVG
             ("test/old/"++s++".svg")
             (mkSizeSpec $ V2 (Just 400) (Just 400))
-            (mat # getBrick # stroke <> mat # strokeOutput)
+            (mat # getWrapper # stroke <> mat # strokeOutput)
 
 processFile :: FilePath -> (Tree NodeType -> QDiagram B V2 Double Any) -> FilePath -> IO ()
 processFile f p s = do

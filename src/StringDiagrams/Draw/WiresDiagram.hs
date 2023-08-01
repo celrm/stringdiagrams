@@ -9,9 +9,9 @@ module StringDiagrams.Draw.WiresDiagram (WiresDiagram) where
 import Diagrams.Prelude
 
 import StringDiagrams.Draw
-    ( drawWires, drawCrossingWires, Drawable (..) )
+    ( drawWires, drawCrossingWires, )
 import StringDiagrams.Read (LeafType(..), leafArity)
-import StringDiagrams.BrickWrapper (BrickWrapper)
+import StringDiagrams.BrickWrapper (BrickWrapper, Drawable (..))
 
 ------------------------------------------------------------
 --  Drawing (hiding the implementation)  -------------------

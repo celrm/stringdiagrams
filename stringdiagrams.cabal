@@ -33,12 +33,12 @@ library
         StringDiagrams.Draw.MatrixDiagram,
         StringDiagrams.Draw.NaiveDiagram,
         StringDiagrams.Draw.WiresDiagram,
+        StringDiagrams.Draw.LabelsDiagram,
     other-modules:
         StringDiagrams.Read,
         StringDiagrams.Draw,
         StringDiagrams.BrickWrapper,
-        StringDiagrams.Draw.LabelsDiagram,
-        StringDiagrams.MonCatDiagram,
+        StringDiagrams.MonCatWrapper,
 
 
 executable stringdiagrams

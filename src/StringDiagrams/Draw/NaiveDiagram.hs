@@ -18,6 +18,5 @@ instance FoldableDiagram (Path V2 Double) where
     leaf l = let (al, ar) = leafArity l in
         unitSquare # alignBL # pinch (-al) # pinch ar
 
-    tensor :: Path V2 Double -> Path V2 Double -> Path V2 Double
     tensor d1 d2 = alignB $ d1 # t1 <> d2 # t2 # snugT
         where (t1, t2) = tensorOps d1 d2

@@ -22,18 +22,24 @@ common shared-properties
         diagrams-lib(>=1.4 && <1.5),
         diagrams-svg,
         safe, aeson, bytestring, 
-        containers(>0.4 && <0.7)
+        containers(>0.4 && <0.7),
+        matrix
 
 library
     import:           shared-properties
     hs-source-dirs:   src
-    exposed-modules:  
+    exposed-modules: 
+        StringDiagrams,
+        StringDiagrams.Draw.MatrixDiagram,
+        StringDiagrams.Draw.NaiveDiagram,
+        StringDiagrams.Draw.WiresDiagram,
+    other-modules:
         StringDiagrams.Read,
         StringDiagrams.Draw,
         StringDiagrams.BrickWrapper,
-        StringDiagrams.Draw.NaiveDiagram,
-        StringDiagrams.Draw.WiresDiagram,
         StringDiagrams.Draw.LabelsDiagram,
+        StringDiagrams.MonCatDiagram,
+
 
 executable stringdiagrams
     import:           shared-properties

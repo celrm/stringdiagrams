@@ -5,29 +5,17 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns  #-}
 {-# OPTIONS_GHC -Wincomplete-uni-patterns #-}
 
--- | Module for drawing string diagrams
---  The main typeclass is FoldableDiagram, which is used to draw the diagrams
---  but has to be instantiated. A default instance LabelsDiagram is provided
---  at StringDiagrams.Draw.LabelsDiagram.
-
--- Example usage:
--- > main = do
--- >  inputDiagram <- readInputDiagram "example.json"
--- >  case inputDiagram of
--- >    Left e -> putStrLn e
--- >    Right inp ->  mainWith $ 
--- >      (inp # inputToOutput :: LabelsDiagram) # strokeOutput
-
 module StringDiagrams.Draw (
     arity, pinch,
     FoldableDiagram(..),
-    Drawable(..),
+    Drawable(..), Compilable(..),
     inputToOutput,
     rectangify, squarify, isoscelify,
     flatCubic,
     connectionPoints,
     drawWires,
-    drawCrossingWires
+    drawCrossingWires,
+    tensorOps, composeOps
 ) where
 
 import Data.Tree ( Tree, foldTree )
@@ -47,13 +35,23 @@ arity :: AType a => a -> (N a, N a)
 arity d = (d # findHeight, d # alignR # findHeight)
     where findHeight = maybe 0 (^._y) . maxRayTraceP origin unitY
 
--- | Deformation that moves a quadrilateral's upper vertex to |k| (k<0 => left, k>0 => right)
+-- | Deformation that moves a quadrilateral's upper vertex to |h| (h<0 => left, h>0 => right)
 pinch :: (Deformable a a, Enveloped a, AType a) => N a -> a -> a
-pinch h d = d # deform (Deformation $ \pt ->
-    pt # scaleY (fxb pt / fx a pt))
+pinch h d = d # deform (Deformation $ \p -> scaleY (fxb p / fx a p) p)
     where a@(al, ar) = d # arity
           fx (l, r) pt =  pt^._x * (r - l) / (d # width) + l
           fxb = if h < 0 then fx (-h, ar) else fx (al, h)
+
+tensorOps :: (Deformable a a, Enveloped a, AType a) => a -> a -> (a -> a, a -> a)
+tensorOps d1 d2 = (pinch middle, pinch (-middle))
+    where [w1, w2] = [width d1, width d2]
+          [h1, h2] = [d1 # arity # fst, d2 # arity # snd]
+          middle = (w1*h2 + w2*h1)/(w1 + w2)
+
+composeOps :: (Deformable a a, Enveloped a, AType a, Transformable a) => a -> a -> (a -> a, a -> a)
+composeOps d1 d2 = (shearY sh . scaleX (mw/w1), scaleX (mw/w2))
+    where [w1, w2, mw] = [width d1, width d2, max w1 w2]
+          sh = (d2 # arity # snd - d2 # arity # fst)/mw
 
 ------------------------------------------------------------
 --  FoldableDiagram typeclass  ---------------------------------
@@ -67,22 +65,16 @@ inputToOutput = foldTree drawNode
 
 -- | Typeclass for output diagrams
 --   Minimal complete definition: leaf, strokeOutput
---   Default definitions: compose, tensor (should not be overriden usually)
+--   Default definitions: compose, tensor (should not be overridden usually)
 class (Deformable a a, Enveloped a, AType a, Transformable a, 
     Juxtaposable a, Semigroup a) => FoldableDiagram a where
     compose :: a -> a -> a
     compose d1 d2 = d1 # t1 ||| d2 # t2
-        where [w1, w2] = [width d1, width d2]
-              [h1, h2] = [d1 # arity # fst, d2 # arity # snd]
-              middle = (w1*h2 + w2*h1)/(w1 + w2)
-              (t1, t2) = (pinch middle, pinch (-middle))
+        where (t1, t2) = tensorOps d1 d2
 
     tensor :: a -> a -> a
     tensor d1 d2 = alignB $ d1 # t1 === d2 # t2
-        where [w1, w2] = [width d1, width d2]
-              mw = max w1 w2
-              sh = (d2 # arity # snd - d2 # arity # fst)/mw
-              (t1, t2) = (shearY sh . scaleX (mw/w1), scaleX (mw/w2))
+        where (t1, t2) = composeOps d1 d2
 
     leaf :: LeafType -> a
     strokeOutput :: a -> Diagram B
@@ -90,6 +82,11 @@ class (Deformable a a, Enveloped a, AType a, Transformable a,
 class (InSpace V2 Double a, Deformable a a, Semigroup a) => Drawable a where
     draw :: LeafType -> a
     strokeDrawing :: a -> Diagram B
+
+class Compilable a where
+    baseCase :: LeafType -> a
+    tensorOp :: a -> a -> a
+    composeOp :: a -> a -> a
 
 ------------------------------------------------------------
 -- Drawing utilities  --------------------------------------
@@ -110,7 +107,7 @@ connectionPoints (al, ar) = (ptsl, ptsr)
 drawWires :: Arity -> Path V2 Double
 drawWires a@(al, ar) = toPath . map (flatCubic c) $ ptsl++ptsr
     where (ptsl, ptsr) = connectionPoints a
-          c = 0.5 ^& (0.125 * (al + 1) * (ar + 1))
+          c = 0.5 ^& (0.5+(0.25*(ar-1))+(0.25*(al-1)))
 
 -- | Draws the wires of a crossing
 drawCrossingWires :: [Int] -> Path V2 Double

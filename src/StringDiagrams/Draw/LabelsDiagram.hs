@@ -14,11 +14,10 @@ import Diagrams.Prelude
 import Diagrams.Backend.SVG ( B )
 
 import StringDiagrams.Draw
-    ( connectionPoints,
-      drawWires,
-      drawCrossingWires, Drawable (..) )
+    ( connectionPoints, drawWires, drawCrossingWires,
+    Drawable (..), flatCubic )
 import StringDiagrams.Read (LeafType(..))
-import StringDiagrams.BrickWrapper (deformPath, BrickWrapper, unwrap)
+import StringDiagrams.BrickWrapper (BrickWrapper, unwrap)
 
 ------------------------------------------------------------
 --  UserDiagram type  ------------------------------------
@@ -34,7 +33,18 @@ $(makeLenses ''UserDiagram)
 type instance V UserDiagram = V2
 type instance N UserDiagram = Double
 instance Semigroup UserDiagram where
-    (<>) od1 od2 = od1 # over sd (<> od2^.sd) # over ls (<> od2^.ls)
+    (<>) od1 od2 = UD (od1^.sd <> od2^.sd) (od1^.ls <> od2^.ls)
+
+-- from Diagrams.Deform.approx (slightly changed)
+deformFixedSeg :: (Fractional n, R1 u, Metric u) =>
+    Deformation v u n -> FixedSegment v n -> FixedSegment u n
+deformFixedSeg t (FLinear p0 p1) = FLinear (deform t p0) (deform t p1)
+deformFixedSeg t (FCubic p0 _ _ p1) = flatCubic (deform t p0) (deform t p1)
+
+-- This is a custom "deformation" for Paths such that only the endpoints (and control points) are moved
+deformPath :: (Floating n, Ord n, R1 u, Metric u, Metric v) =>
+    Deformation v u n -> Path v n -> Path u n
+deformPath t = toPath . map (map (deformFixedSeg t . mkFixedSeg)) . pathLocSegments
 
 instance r ~ UserDiagram => Deformable UserDiagram r where
     deform' _ = deform
@@ -53,30 +63,27 @@ instance Drawable UserDiagram where
 
     draw :: LeafType -> UserDiagram
     draw (Morphism (al, ar) s) = UD
-        { _sd = drawWires (al,ar)
-        , _ls = [ Loc c
-            $ (text s # fontSizeG 0.25 # translateY (-0.0625)) -- TODO fit inside boxes
-            <> (square 0.3 # scaleY 1.5 # fc white)] -- TODO clip instead
-        } where c = 0.5 ^& (0.125 * (al + 1) * (ar + 1))
+        (drawWires (al,ar))
+        [ Loc c $ (text s # fontSizeG 0.25 # translateY (-0.0625))
+            <> (square 0.3 # scaleY 2 # bg white) ]
+        where c = 0.5 ^& (0.5+(0.25*(ar-1))+(0.25*(al-1)))
 
-    draw (Crossing mf) = UD { _sd = drawCrossingWires mf , _ls = [] }
-    
+    draw (Crossing mf) = UD (drawCrossingWires mf) []
+
     draw (MorphismWNames (als, ars) s) = UD
-        { _sd = drawWires (al,ar)
-        , _ls = [ Loc c
-            $ (text s # fontSizeG 0.25 # translateY (-0.0625)) -- TODO fit inside boxes
-            <> (square 0.3 # scaleY 2 # fc white)] -- TODO clip instead
-        } # over ls (++ wireNames) 
-        where c = 0.5 ^& (0.125 * (al + 1) * (ar + 1))
+        (drawWires (al,ar))
+        (Loc c ((text s # fontSizeG 0.25 # translateY (-0.0625))
+            <> (square 0.3 # scaleY 2 # fc white))
+            : wireNames)
+        where c = 0.5 ^& (0.5+(0.25*(ar-1))+(0.25*(al-1)))
               a@(al, ar) = ((fromIntegral . length) als, (fromIntegral . length) ars)
               (ptsl,ptsr) = connectionPoints a
               funct = zipWith (\p n -> Loc p (text n # fontSizeG 0.25 # translateY 0.0625))
               wireNames = funct ptsl als ++ funct ptsr ars
-              -- they get drawn twice
-              
-    draw (CrossingWNames ks mf) = UD 
-        { _sd = drawCrossingWires mf 
-        , _ls = wireNames }
+
+    draw (CrossingWNames ks mf) = UD
+        (drawCrossingWires mf)
+        wireNames
         where k = (fromIntegral . length) mf
               (ptsl,ptsr) = connectionPoints (k, k)
               funct = zipWith (\p n -> Loc p (text n # fontSizeG 0.25 # translateY 0.0625))

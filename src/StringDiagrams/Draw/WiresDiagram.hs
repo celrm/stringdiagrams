@@ -21,10 +21,10 @@ instance Drawable (Path V2 Double) where
     strokeDrawing = strokePath
 
     draw (Morphism a _) = drawWires a
-    draw (Crossing mf) = drawCrossingWires mf
+    draw (Crossing p) = drawCrossingWires p
     draw l@(MorphismWNames _ _) =
         draw $ Morphism (leafArity l) ""
-    draw (CrossingWNames _ mf) = 
-        draw $ Crossing mf
+    draw (CrossingWNames _ p) = 
+        draw $ Crossing p
 
 type WiresDiagram = BrickWrapper (Path V2 Double)

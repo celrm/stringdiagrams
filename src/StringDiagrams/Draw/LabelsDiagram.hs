@@ -66,28 +66,28 @@ instance Drawable UserDiagram where
         (drawWires (al,ar))
         [ Loc c $ (text s # fontSizeG 0.25 # translateY (-0.0625))
             <> (square 0.3 # scaleY 2 # bg white) ]
-        where c = 0.5 ^& (0.5+(0.25*(ar-1))+(0.25*(al-1)))
+        where c = 0.5 ^& (0.25*al + 0.25*ar)
 
-    draw (Crossing mf) = UD (drawCrossingWires mf) []
+    draw (Crossing p) = UD (drawCrossingWires p) []
 
     draw (MorphismWNames (als, ars) s) = UD
         (drawWires (al,ar))
         (Loc c ((text s # fontSizeG 0.25 # translateY (-0.0625))
             <> (square 0.3 # scaleY 2 # fc white))
             : wireNames)
-        where c = 0.5 ^& (0.5+(0.25*(ar-1))+(0.25*(al-1)))
+        where c = 0.5 ^& (0.25*al + 0.25*ar)
               a@(al, ar) = ((fromIntegral . length) als, (fromIntegral . length) ars)
               (ptsl,ptsr) = connectionPoints a
               funct = zipWith (\p n -> Loc p (text n # fontSizeG 0.25 # translateY 0.0625))
               wireNames = funct ptsl als ++ funct ptsr ars
 
-    draw (CrossingWNames ks mf) = UD
-        (drawCrossingWires mf)
+    draw (CrossingWNames ks p) = UD
+        (drawCrossingWires p)
         wireNames
-        where k = (fromIntegral . length) mf
+        where k = (fromIntegral . length) p
               (ptsl,ptsr) = connectionPoints (k, k)
-              funct = zipWith (\p n -> Loc p (text n # fontSizeG 0.25 # translateY 0.0625))
-              wireNames = funct ptsl ks ++ funct ptsr (map (ks !!) mf)
+              funct = zipWith (\c n -> Loc c (text n # fontSizeG 0.25 # translateY 0.0625))
+              wireNames = funct ptsl ks ++ funct ptsr (map (ks !!) p)
 
 type LabelsDiagram = BrickWrapper UserDiagram
 

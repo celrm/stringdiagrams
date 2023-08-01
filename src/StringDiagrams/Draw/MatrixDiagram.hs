@@ -18,6 +18,10 @@ import Data.Matrix (Matrix (nrows, ncols), fromLists, matrix, joinBlocks, zero)
 import Diagrams.Prelude
 import Diagrams.Backend.SVG (B)
 
+------------------------------------------------------------
+--  Labels is Drawable --------------------------------------
+------------------------------------------------------------
+
 newtype Labels = Labels [Located (Diagram B)]
 type instance N Labels = Double
 type instance V Labels = V2
@@ -28,17 +32,19 @@ instance Deformable Labels Labels where
     deform t (Labels ls) = Labels $ map (deformLoc t) ls
         where deformLoc t' (Loc o s) = Loc (deform t' o) s
 instance Drawable Labels where
-    strokeDrawing (Labels ls) = 
+    strokeDrawing (Labels ls) =
         mconcat . map (\(Loc o s) -> moveOriginTo (-o) s) $ ls
-    draw (Morphism (al, ar) s) = Labels
-        [ Loc c $ text s # fontSizeG 0.25 ]
-        where c = 0.5 ^& (0.5+(0.25*(ar-1))+(0.25*(al-1)))
+    draw (Morphism (al, ar) s) = Labels [ Loc c $ text s # fontSizeG 0.25 ]
+        where c = 0.5 ^& (0.25*al + 0.25*ar)
     draw l@(MorphismWNames _ s) = draw (Morphism (leafArity l) s)
     draw _ = Labels []
 
+------------------------------------------------------------
+--  Matrix Double is Compilable ----------------------------
+------------------------------------------------------------
+
 stringToMatrix :: String -> Matrix Double
-stringToMatrix = fromLists . readMatrix
-    where readMatrix = read :: String -> [[Double]]
+stringToMatrix = fromLists . read
 
 permToMatrix :: [Int] -> Matrix Double
 permToMatrix p = matrix (length p) (length p)
@@ -55,4 +61,8 @@ instance Compilable (Matrix Double) where
               z2 = Data.Matrix.zero (nrows b) (ncols a)
     composeOp = (*)
 
-type MatrixDiagram = MonCatDiagram () ()
+------------------------------------------------------------
+--  MatrixDiagram is MonCatDiagram -------------------------
+------------------------------------------------------------
+
+type MatrixDiagram = MonCatDiagram Labels (Matrix Double)

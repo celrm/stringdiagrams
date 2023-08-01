@@ -42,17 +42,17 @@ pinch h d = d # deform (Deformation $ \p -> scaleY (fxb p / fx a p) p)
           fx (l, r) pt =  pt^._x * (r - l) / (d # width) + l
           fxb = if h < 0 then fx (-h, ar) else fx (al, h)
 
-tensorOps :: (Deformable a a, Enveloped a, AType a) => a -> a -> (a -> a, a -> a)
-tensorOps d1 d2 = (pinch middle, pinch (-middle))
-    where [w1, w2] = [width d1, width d2]
-          [h1, h2] = [d1 # arity # fst, d2 # arity # snd]
-          middle = (w1*h2 + w2*h1)/(w1 + w2)
-
-composeOps :: (Deformable a a, Enveloped a, AType a, Transformable a) => a -> a -> (a -> a, a -> a)
-composeOps d1 d2 = (shearY sh . scaleX (mw/w1), scaleX (mw/w2))
+tensorOps :: (Deformable a a, Enveloped a, AType a, Transformable a) => a -> a -> (a -> a, a -> a)
+tensorOps d1 d2 = (shearY sh . scaleX (mw/w1), scaleX (mw/w2))
     where [w1, w2, mw] = [width d1, width d2, max w1 w2]
           sh = (d2 # arity # snd - d2 # arity # fst)/mw
 
+
+composeOps :: (Deformable a a, Enveloped a, AType a) => a -> a -> (a -> a, a -> a)
+composeOps d1 d2 = (pinch middle, pinch (-middle))
+    where [w1, w2] = [width d1, width d2]
+          [h1, h2] = [d1 # arity # fst, d2 # arity # snd]
+          middle = (w1*h2 + w2*h1)/(w1 + w2)
 ------------------------------------------------------------
 --  FoldableDiagram typeclass  ---------------------------------
 ------------------------------------------------------------
@@ -70,11 +70,11 @@ class (Deformable a a, Enveloped a, AType a, Transformable a,
     Juxtaposable a, Semigroup a) => FoldableDiagram a where
     compose :: a -> a -> a
     compose d1 d2 = d1 # t1 ||| d2 # t2
-        where (t1, t2) = tensorOps d1 d2
+        where (t1, t2) = composeOps d1 d2
 
     tensor :: a -> a -> a
     tensor d1 d2 = alignB $ d1 # t1 === d2 # t2
-        where (t1, t2) = composeOps d1 d2
+        where (t1, t2) = tensorOps d1 d2
 
     leaf :: LeafType -> a
     strokeOutput :: a -> Diagram B
@@ -107,13 +107,13 @@ connectionPoints (al, ar) = (ptsl, ptsr)
 drawWires :: Arity -> Path V2 Double
 drawWires a@(al, ar) = toPath . map (flatCubic c) $ ptsl++ptsr
     where (ptsl, ptsr) = connectionPoints a
-          c = 0.5 ^& (0.5+(0.25*(ar-1))+(0.25*(al-1)))
+          c = 0.5 ^& (0.25*al + 0.25*ar)
 
 -- | Draws the wires of a crossing
 drawCrossingWires :: [Int] -> Path V2 Double
-drawCrossingWires mf = toPath [flatCubic (0 ^& (0.5+i))
-    (1 ^& (0.5 + fromIntegral (mf !! floor i))) | i <-[0..k-1]]
-    where k = (fromIntegral . length) mf
+drawCrossingWires p = toPath [flatCubic (0 ^& (0.5+i))
+    (1 ^& (0.5 + fromIntegral (p !! floor i))) | i <-[0..k-1]]
+    where k = (fromIntegral . length) p
 
 ------------------------------------------------------------
 --  External utilities  -------------------------------------

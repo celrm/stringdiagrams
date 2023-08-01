@@ -30,10 +30,10 @@ leafArity :: LeafType -> Arity
 leafArity (Morphism (al, ar) _) = (al, ar)
 leafArity (MorphismWNames (als, ars) _) = 
     ((fromIntegral . length) als, (fromIntegral . length) ars)
-leafArity (Crossing mf) = (k, k)
-    where k = (fromIntegral . length) mf
-leafArity (CrossingWNames _ mf) = (k, k)
-    where k = (fromIntegral . length) mf
+leafArity (Crossing p) = (k, k)
+    where k = (fromIntegral . length) p
+leafArity (CrossingWNames _ p) = (k, k)
+    where k = (fromIntegral . length) p
 
 data NodeType = Leaf LeafType
     | Compose

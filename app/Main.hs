@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Main (main) where
 
@@ -17,39 +18,31 @@ import Data.Matrix (prettyMatrix)
 
 main :: IO ()
 main = do
+    let label = inputToOutput :: Tree NodeType -> LabelsDiagram
+    let framed f inp = (inp # label # f <> (square 2 # alignBL # lc white)) # frame 1
     processFile "hh19.json" (\inp -> (inp # inputToOutput :: Path V2 Double) # strokeOutput) "1-pathAsBD"
     -- processFile "hh19.json" (\inp -> (inp # inputToOutput :: Path V2 Double) # strokeOutput) "2-pathAsBDWrong"
-    processFile "pointy.json" (\inp -> (inp # inputToOutput :: WiresDiagram) # strokeOutput) "3-pathAsWD"
-    processFile "pointy.json" (\inp -> (inp # inputToOutput :: LabelsDiagram) # strokeWires) "4-outdAsWD"
-    processFile "hh19.json" (\inp -> ((inp # inputToOutput :: LabelsDiagram) # strokeBrick
-      <> (square 2 # alignBL # lc white)) # frame 1) "5-odBrick"
-    processFile "hh19.json" (\inp -> ((inp # inputToOutput :: LabelsDiagram) # strokeWires
-      <> (square 2 # alignBL # lc white)) # frame 1) "6-odWire"
-    processFile "hh19.json" (\inp -> ((inp # inputToOutput :: LabelsDiagram) # strokeOutput
-      <> (square 2 # alignBL # lc white)) # frame 1) "7-odAll"
-    processFile "test58.json" (\inp -> (inp # inputToOutput :: LabelsDiagram) # strokeOutput) "9-blob"
+    processFile "simple.json" (\inp -> (inp # inputToOutput :: WiresDiagram) # strokeOutput) "3-pathAsWD"
+    processFile "simple.json" (strokeWires . label) "4-outdAsWD"
+    processFile "hh19.json" (framed strokeBrick) "5-odBrick"
+    processFile "hh19.json" (framed strokeWires) "6-odWire"
+    processFile "hh19.json" (framed strokeOutput) "7-odAll"
+    processFile "test58.json" (strokeOutput . label) "9-blob"
     processMat "mat.json" "10-mat"
 
 processMat :: FilePath -> FilePath -> IO ()
 processMat f s = do
-    inputDiagram <- readInputDiagram ("test/old/"++f)
-    case inputDiagram of
-      Left e -> putStrLn e
-      Right exmp -> do
-          let mat = exmp # inputToOutput :: MatrixDiagram
-          putStr $ prettyMatrix $ getSemantics mat
-          renderSVG
-            ("test/old/"++s++".svg")
-            (mkSizeSpec $ V2 (Just 400) (Just 400))
-            (mat # getWrapper # stroke <> mat # strokeOutput)
+    Right exmp <- readInputDiagram ("test/"++f)
+    let mat = exmp # inputToOutput :: MatrixDiagram
+    putStr $ prettyMatrix $ getSemantics mat
+    renderToFile s (mat # getWrapper # stroke <> mat # strokeOutput)
 
 processFile :: FilePath -> (Tree NodeType -> QDiagram B V2 Double Any) -> FilePath -> IO ()
 processFile f p s = do
-    inputDiagram <- readInputDiagram ("test/old/"++f)
-    case inputDiagram of
-      Left e -> putStrLn e
-      Right exmp ->
-          renderSVG
-            ("test/old/"++s++".svg")
+    Right exmp <- readInputDiagram ("test/"++f)
+    renderToFile s (p exmp)
+
+renderToFile :: FilePath -> QDiagram B V2 Double Any -> IO ()
+renderToFile s = renderSVG
+            ("test/"++s++".svg")
             (mkSizeSpec $ V2 (Just 400) (Just 400))
-            (p exmp)

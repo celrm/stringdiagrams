@@ -46,7 +46,6 @@ tensorOps d1 d2 = (shearY sh . scaleX (mw/w1), scaleX (mw/w2))
     where [w1, w2, mw] = [width d1, width d2, max w1 w2]
           sh = (d2 # arity # snd - d2 # arity # fst)/mw
 
-
 composeOps :: (Deformable a a, Enveloped a, AType a) => a -> a -> (a -> a, a -> a)
 composeOps d1 d2 = (pinch middle, pinch (-middle))
     where [w1, w2] = [width d1, width d2]

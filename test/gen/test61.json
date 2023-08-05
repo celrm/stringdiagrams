@@ -1,0 +1,21 @@
+{
+    "type": "MorphismWNames",
+    "label": "p",
+    "dom": [
+        "n",
+        "c",
+        "t",
+        "j",
+        "j",
+        "j",
+        "p"
+    ],
+    "cod": [
+        "v",
+        "v",
+        "i",
+        "x",
+        "b",
+        "q"
+    ]
+}

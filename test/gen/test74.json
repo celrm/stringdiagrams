@@ -1,0 +1,36 @@
+{
+    "type": "Tensor",
+    "diagram1": {
+        "type": "MorphismWNames",
+        "label": "v",
+        "dom": [
+            "g",
+            "f",
+            "r",
+            "l",
+            "t",
+            "c",
+            "q"
+        ],
+        "cod": [
+            "m",
+            "t",
+            "a",
+            "b",
+            "q",
+            "z"
+        ]
+    },
+    "diagram2": {
+        "type": "MorphismWNames",
+        "label": "g",
+        "dom": [
+            "b"
+        ],
+        "cod": [
+            "v",
+            "c",
+            "s"
+        ]
+    }
+}

@@ -1,0 +1,33 @@
+{
+    "type": "Compose",
+    "diagram1": {
+        "type": "Tensor",
+        "diagram1": {
+            "type": "MorphismWNames",
+            "dom": ["$x_1$"],
+            "cod": ["$x_3$","$x_4$"],
+            "label": "$f_1$"
+        },
+        "diagram2": {
+            "type": "MorphismWNames",
+            "dom": ["$x_2$"],
+            "cod": ["$x_5$"],
+            "label": "$f_2$"
+        }
+    },
+    "diagram2": {
+        "type": "Tensor",
+        "diagram1": {
+            "type": "MorphismWNames",
+            "dom": ["$x_3$"],
+            "cod": ["$x_6$"],
+            "label": "$f_3$"
+        },
+        "diagram2": {
+            "type": "MorphismWNames",
+            "dom": ["$x_4$","$x_5$"],
+            "cod": ["$x_7$"],
+            "label": "$f_4$"
+        }
+    }
+}

@@ -1,0 +1,30 @@
+{
+    "type": "Compose",
+    "diagram1": {
+        "type": "Morphism",
+        "label": "w",
+        "arity": [
+            5,
+            6
+        ]
+    },
+    "diagram2": {
+        "type": "MorphismWNames",
+        "label": "y",
+        "dom": [
+            "h",
+            "l",
+            "l",
+            "e",
+            "z",
+            "g"
+        ],
+        "cod": [
+            "d",
+            "e",
+            "p",
+            "n",
+            "w"
+        ]
+    }
+}

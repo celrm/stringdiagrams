@@ -33,8 +33,8 @@ instance Deformable Labels Labels where
 instance Drawable Labels where
     strokeDrawing (Labels ls) =
         mconcat . map (\(Loc o s) -> moveOriginTo (-o) s) $ ls
-    draw (Morphism (al, ar) s) = Labels [ Loc c $ text s # fontSizeG 0.25 ]
-        where c = 0.5 ^& (0.25*al + 0.25*ar)
+    draw (Morphism (al, ar) s) = let c = 0.5 ^& (0.25*al + 0.25*ar)
+        in Labels [ Loc c $ text s # fontSizeG 0.25 ]
     draw l@(MorphismWNames _ s) = draw (Morphism (leafArity l) s)
     draw _ = Labels []
 
@@ -55,9 +55,9 @@ instance Compilable (Matrix Double) where
     baseCase (MorphismWNames _ s) = stringToMatrix s
     baseCase (CrossingWNames _ p) = permToMatrix p
 
-    tensorOp a b = joinBlocks (a, z1, z2, b)
-        where z1 = Data.Matrix.zero (nrows a) (ncols b)
-              z2 = Data.Matrix.zero (nrows b) (ncols a)
+    tensorOp m1 m2 = joinBlocks (m1, z1, z2, m2)
+        where z1 = Data.Matrix.zero (nrows m1) (ncols m2)
+              z2 = Data.Matrix.zero (nrows m2) (ncols m1)
     composeOp = (*)
 
 ------------------------------------------------------------

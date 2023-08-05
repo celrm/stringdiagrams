@@ -1,0 +1,13 @@
+{
+  "type": "Compose",
+  "diagram1": {
+    "type": "Morphism",
+    "arity": [1, 4],
+    "label": ""
+  },
+  "diagram2": {
+    "type": "Morphism",
+    "arity": [4, 1],
+    "label": ""
+  }
+}

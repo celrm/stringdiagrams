@@ -1,0 +1,140 @@
+{
+    "type": "Tensor",
+    "diagram1": {
+        "type": "Compose",
+        "diagram1": {
+            "type": "Crossing",
+            "permutation": [
+                3,
+                0,
+                2,
+                4,
+                1
+            ]
+        },
+        "diagram2": {
+            "type": "Compose",
+            "diagram1": {
+                "type": "Tensor",
+                "diagram1": {
+                    "type": "Compose",
+                    "diagram1": {
+                        "type": "CrossingWNames",
+                        "permutation": [
+                            0,
+                            2,
+                            1,
+                            3
+                        ],
+                        "dom": [
+                            "u",
+                            "i",
+                            "w",
+                            "j"
+                        ]
+                    },
+                    "diagram2": {
+                        "type": "MorphismWNames",
+                        "label": "k",
+                        "dom": [
+                            "w",
+                            "b",
+                            "x",
+                            "k"
+                        ],
+                        "cod": [
+                            "b"
+                        ]
+                    }
+                },
+                "diagram2": {
+                    "type": "Compose",
+                    "diagram1": {
+                        "type": "Crossing",
+                        "permutation": [
+                            0
+                        ]
+                    },
+                    "diagram2": {
+                        "type": "Morphism",
+                        "label": "z",
+                        "arity": [
+                            1,
+                            1
+                        ]
+                    }
+                }
+            },
+            "diagram2": {
+                "type": "Compose",
+                "diagram1": {
+                    "type": "Tensor",
+                    "diagram1": {
+                        "type": "Morphism",
+                        "label": "a",
+                        "arity": [
+                            1,
+                            1
+                        ]
+                    },
+                    "diagram2": {
+                        "type": "MorphismWNames",
+                        "label": "n",
+                        "dom": [
+                            "t"
+                        ],
+                        "cod": [
+                            "n"
+                        ]
+                    }
+                },
+                "diagram2": {
+                    "type": "Compose",
+                    "diagram1": {
+                        "type": "MorphismWNames",
+                        "label": "p",
+                        "dom": [
+                            "x",
+                            "x"
+                        ],
+                        "cod": [
+                            "w",
+                            "w"
+                        ]
+                    },
+                    "diagram2": {
+                        "type": "MorphismWNames",
+                        "label": "y",
+                        "dom": [
+                            "x",
+                            "w"
+                        ],
+                        "cod": [
+                            "j"
+                        ]
+                    }
+                }
+            }
+        }
+    },
+    "diagram2": {
+        "type": "MorphismWNames",
+        "label": "d",
+        "dom": [
+            "q",
+            "b",
+            "u"
+        ],
+        "cod": [
+            "z",
+            "r",
+            "x",
+            "u",
+            "v",
+            "d",
+            "f",
+            "e",
+            "n"
+        ]
+    }
+}

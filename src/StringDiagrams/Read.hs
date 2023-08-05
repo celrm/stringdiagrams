@@ -65,10 +65,10 @@ instance FromJSON TupleDiagram where
         let l = Morphism arity label
         return $ TID (arity, Node (Leaf l) [])
       "MorphismWNames" -> do
-        arityL <- v .: "arityL"
-        arityR <- v .: "arityR"
+        dom <- v .: "dom"
+        cod <- v .: "cod"
         label <- v .: "label"
-        let l = MorphismWNames (arityL, arityR) label
+        let l = MorphismWNames (dom, cod) label
         return $ TID (leafArity l, Node (Leaf l) [])
       "Crossing" -> do
         per <- v .: "permutation"
@@ -77,7 +77,7 @@ instance FromJSON TupleDiagram where
           return $ TID (leafArity l, Node (Leaf l) [])
         else fail "Invalid InputDiagram Crossing"
       "CrossingWNames" -> do
-        a <- v .: "arity"
+        a <- v .: "dom"
         per <- v .: "permutation"
         let l = CrossingWNames a per
         if isPerm per then 
@@ -116,13 +116,13 @@ instance FromJSON NamedTupleDiagram where
     typeName <- v .: "type"
     case typeName :: String of
       "MorphismWNames" -> do
-        arityL <- v .: "arityL"
-        arityR <- v .: "arityR"
+        dom <- v .: "dom"
+        cod <- v .: "cod"
         label <- v .: "label"
-        return $ NID ((arityL, arityR), 
-          Node (Leaf $ MorphismWNames (arityL,arityR) label) [])
+        return $ NID ((dom, cod), 
+          Node (Leaf $ MorphismWNames (dom,cod) label) [])
       "CrossingWNames" -> do
-        a <- v .: "arity"
+        a <- v .: "dom"
         per <- v .: "permutation"
         if isPerm per then 
           return $ NID ((a, applyPerm per a), 
